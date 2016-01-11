@@ -1,0 +1,43 @@
+#right-col {
+    width: 75%;
+    display: inline-block;
+    box-sizing: border-box;
+    overflow: auto;
+}
+#left-col {
+    width: 25%;
+    height: 100%;
+    float: left;
+    white-space:nowrap;
+    display: inline-block;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+.catalog {
+    display: inline-block;
+    width: 100%;
+}
+
+#search_box #tree_search {
+    border: 0;
+    font-size: 14px;
+    margin: 0;
+    padding: 5px;
+    width: 100%;
+}
+
+.catalog ul {
+    margin-left: 0;
+    padding-left: 0;
+}
+
+.catalog #tree_container {
+    height: 100%;
+}
+
+.app-catalog .delete-item {
+    background-image: url("jstree/default/32px.png");
+    background-repeat: no-repeat;
+    background-color: transparent;
+    background-position: -36px -66px;
+}
