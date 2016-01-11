@@ -1,6 +1,7 @@
 from django.apps import apps as django_apps
 from django.conf import settings
 
+
 def get_catalog_models():
     for model_path in settings.CATALOG_MODELS:
         app_label, model_name = tuple(model_path.split('.'))

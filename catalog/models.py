@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
+from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 from mptt.models import MPTTModel
@@ -21,7 +22,10 @@ class TreeItem(MPTTModel):
     content_object = generic.GenericForeignKey()
 
     def __unicode__(self):
-        return 'TreeItem - ' + unicode(self.content_object)
+        if self.content_object:
+            return unicode(self.content_object)
+        else:
+            return 'Catalog Tree item'
 
     def delete(self, *args, **kwargs):
         for child in self.get_children():
@@ -35,5 +39,22 @@ class CatalogBase(models.Model):
     class Meta:
         abstract = True
 
-    leaf  = False
+    leaf = False
     tree = generic.GenericRelation('TreeItem')
+    show = models.BooleanField(verbose_name=_('Show on site'), default=True)
+
+    def get_complete_slug(self):
+        try:
+            url = self.slug
+            if not self.tree.get().is_root():
+                for ancestor in self.tree.get().get_ancestors():
+                    url = ancestor.content_object.slug + '/' + url
+            return url
+        except AttributeError:
+            pass
+
+    def get_absolute_url(self):
+        try:
+            return reverse('catalog-item', kwargs={'path': self.get_complete_slug()})
+        except NoReverseMatch:
+            pass

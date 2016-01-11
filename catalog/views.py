@@ -1,8 +1,9 @@
-from django.views.generic import TemplateView, DetailView
-from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, FieldError
+# -*- coding: utf-8 -*-
+from django.views.generic import DetailView, TemplateView
 from django.http import Http404
-from catalog.utils import get_content_objects, get_catalog_models
-from catalog.models import TreeItem
+from django.core.exceptions import ObjectDoesNotExist, FieldError, ImproperlyConfigured
+from models import TreeItem
+from utils import get_catalog_models, get_content_objects
 
 
 class CatalogRootView(TemplateView):
@@ -11,7 +12,7 @@ class CatalogRootView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(CatalogRootView, self).get_context_data(**kwargs)
-        context['object_list'] = get_content_objects(TreeItem.get_root_nodes())
+        context['object_list'] = get_content_objects(TreeItem.objects.filter(parent=None))
         return context
 
 
