@@ -27,6 +27,12 @@ class TreeItem(MPTTModel):
         else:
             return 'Catalog Tree item'
 
+    def get_slug(self):
+        try:
+            return self.content_object.slug
+        except AttributeError:
+            return None
+
     def delete(self, *args, **kwargs):
         for child in self.get_children():
             child.delete()

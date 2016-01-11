@@ -16,12 +16,36 @@ var delete_tree_item = function(node, tree){
     });
 }
 
+function addMessage(type, text) {
+    var message = $('<li class="' + type + '">' + text + '</li>').hide();
+    $(".messagelist").append(message);
+    message.fadeIn(500);
+
+    setTimeout(function() {
+        message.fadeOut(500, function() {
+            message.remove();
+        });
+    }, 5000);
+}
 
 var move_tree_item = function(item_id, target_id, position){
+    var moving = false;
     $.ajax({
         url: 'move/' + item_id,
         data: {'position': position, 'target_id': target_id},
+        async: false,
+        success: function(data){
+            if (data.status === 'OK') {
+                moving = true;
+                addMessage(data.type_message, data.message);
+            }
+            else {
+                moving = false;
+                addMessage(data.type_message, data.message);
+            }
+        }
     });
+    return moving;
 }
 
 
@@ -174,7 +198,7 @@ CatalogApp.TreeView = Backbone.View.extend({
                     }
                 }
             },
-            'plugins' : [ 'dnd', 'search', 'types' ]
+            'plugins' : [ 'dnd', 'search', 'types', 'contextmenu']
         });
 
         this.$el.on('select_node.jstree', function(e, data){
@@ -208,17 +232,25 @@ CatalogApp.TreeView = Backbone.View.extend({
     },
     checkTreeCallbacks: function(operation, node, parent, position, more){
         if (operation === "move_node" && more && more.core) {
-            console.log(operation, parent, node, position, more);
+            var moving = false;
             if(confirm('Вы уверенны?')){
                 if(parent.children.length !== 0){
+                    var i = 0;
                     _.each(parent.children, function(child_id){
-                        console.log(this);
-                        console.log(parent.children.indexOf(this.get_node(child_id).id),this.get_node(child_id).text);
+                        var target = this.get_node(child_id);
+                        var parent_target = this.get_node(target.parent);
+                        if (position === $.inArray(target.id, parent_target.children)) {
+                            moving = move_tree_item(node.id, target.id, 'left');
+                        }
+                        if (i === parent.children.length - 1 && position === parent.children.length) {
+                            moving = move_tree_item(node.id, target.id, 'right');
+                        }
+                        i++;
                     }, this);
                 } else {
-                    move_tree_item(node.id, parent.id, 'first-child');
+                    moving = move_tree_item(node.id, parent.id, 'first-child');
                 }
-                return true
+                return moving;
             }
         }
     },

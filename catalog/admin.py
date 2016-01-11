@@ -1,6 +1,8 @@
-from django.contrib import admin
+# -*- coding: utf-8 -*-
+from django.contrib import admin, messages
 from django.template.response import TemplateResponse
 from django.conf.urls import patterns, url
+from django.utils.translation import ugettext_lazy as _
 from django.apps import apps
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -11,7 +13,6 @@ from catalog.utils import get_catalog_models
 class CatalogAdmin(admin.ModelAdmin):
     change_list_template = u'catalog/admin/tree_list.html'
     model = TreeItem
-
 
     def changelist_view(self, request):
         opts = self.model._meta
@@ -39,20 +40,26 @@ class CatalogAdmin(admin.ModelAdmin):
             if node.content_object.leaf is True:
                 a['type'] = 'leaf'
             a['id'] = node.id
-            a['text'] = node.content_object.__unicode__()
+            a['text'] = node.__unicode__()
             tree.append(a)
         return JsonResponse(tree, safe=False)
 
     def move_tree_item(self, request, item_id):
         position = request.GET.get('position', None)
         target_id = request.GET.get('target_id', None)
-        print position, target_id
 
         if position and target_id:
-            tree = get_object_or_404(TreeItem, id=item_id)
+            node = get_object_or_404(TreeItem, id=item_id)
             target = get_object_or_404(TreeItem, id=target_id)
-            tree.move_to(target, position)
-        return HttpResponse()
+            if position != 'first-child':
+                for sibling in target.get_siblings(include_self=True):
+                    if sibling != node and sibling.get_slug() == node.get_slug() and node.get_slug() is not None:
+                        message = _('Invalid move. Object %s with slug %s exist in this level' %
+                                          (sibling.__unicode__(), sibling.get_slug()))
+                        return JsonResponse({'status': 'error', 'type_message': 'error', 'message': unicode(message)})
+            node.move_to(target, position)
+        message = _('Successful move')
+        return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': unicode(message)})
 
     def delete_tree_item(self, request, item_id):
         if(item_id):
