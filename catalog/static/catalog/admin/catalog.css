@@ -16,6 +16,18 @@
 .catalog {
     display: inline-block;
     width: 100%;
+    position: relative;
+}
+
+#overlay {
+    background: rgba(0, 0, 0, 0.4);
+    display: none;
+    height: 100% !important;
+    width: 100% !important;
+    left: 0;
+    position: absolute;
+    top: 0;
+    z-index: 999;
 }
 
 #search_box #tree_search {
