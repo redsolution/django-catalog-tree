@@ -52,7 +52,7 @@ class CatalogAdmin(admin.ModelAdmin):
                 for model_cls in get_catalog_models():
                     a['data']['add_links'].append({'url': reverse('admin:%s_%s_add' % (model_cls._meta.app_label,
                                                                                         model_cls._meta.model_name)) +
-                        '?target=%s' %node.id,
+                                                          '?target=%s' %node.id,
                                                    'label': u'Добавить %s' % model_cls._meta.verbose_name})
             tree.append(a)
         return JsonResponse(tree, safe=False)
@@ -167,12 +167,10 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         target_id = request.GET.get('target', None)
-        siblings = TreeItem.objects.root_nodes()
         target = None
         if target_id:
             try:
                 target = TreeItem.objects.get(pk=target_id)
-                siblings = target.get_children()
             except TreeItem.DoesNotExist:
                 pass
         obj.save()
