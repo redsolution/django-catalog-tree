@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
 from django.contrib import admin
 from django.template.response import TemplateResponse
 from django.conf.urls import patterns, url
+from django.utils.translation import ugettext_lazy as _
 from django.apps import apps
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponse
+from django.core.urlresolvers import reverse
+from django import forms
 from catalog.models import TreeItem
 from catalog.utils import get_catalog_models
 
@@ -11,7 +15,6 @@ from catalog.utils import get_catalog_models
 class CatalogAdmin(admin.ModelAdmin):
     change_list_template = u'catalog/admin/tree_list.html'
     model = TreeItem
-
 
     def changelist_view(self, request):
         opts = self.model._meta
@@ -23,7 +26,7 @@ class CatalogAdmin(admin.ModelAdmin):
             'app_label': app_label,
             'title': title,
             'opts': opts,
-            'app_config': app_config
+            'app_config': app_config,
         }
         return TemplateResponse(request, self.change_list_template,
                                 context, current_app=self.admin_site.name)
@@ -39,20 +42,37 @@ class CatalogAdmin(admin.ModelAdmin):
             if node.content_object.leaf is True:
                 a['type'] = 'leaf'
             a['id'] = node.id
-            a['text'] = node.content_object.__unicode__()
+            a['text'] = node.__unicode__()
+            a['data'] = {}
+            a['data']['change_link'] = reverse('admin:%s_%s_change' % (node.content_object.__class__._meta.app_label,
+                                                                       node.content_object.__class__.__name__.lower()),
+                                               args=(node.content_object.id,))
+            if node.content_object.leaf is False:
+                a['data']['add_links'] = []
+                for model_cls in get_catalog_models():
+                    a['data']['add_links'].append({'url': reverse('admin:%s_%s_add' % (model_cls._meta.app_label,
+                                                                                        model_cls._meta.model_name)) +
+                        '?target=%s' %node.id,
+                                                   'label': u'Добавить %s' % model_cls._meta.verbose_name})
             tree.append(a)
         return JsonResponse(tree, safe=False)
 
     def move_tree_item(self, request, item_id):
         position = request.GET.get('position', None)
         target_id = request.GET.get('target_id', None)
-        print position, target_id
 
         if position and target_id:
-            tree = get_object_or_404(TreeItem, id=item_id)
+            node = get_object_or_404(TreeItem, id=item_id)
             target = get_object_or_404(TreeItem, id=target_id)
-            tree.move_to(target, position)
-        return HttpResponse()
+            if position != 'first-child':
+                for sibling in target.get_siblings(include_self=True):
+                    if sibling != node and sibling.get_slug() == node.get_slug() and node.get_slug() is not None:
+                        message = _('Invalid move. Object %s with slug %s exist in this level' %
+                                          (sibling.__unicode__(), sibling.get_slug()))
+                        return JsonResponse({'status': 'error', 'type_message': 'error', 'message': unicode(message)})
+            node.move_to(target, position)
+        message = _('Successful move')
+        return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': unicode(message)})
 
     def delete_tree_item(self, request, item_id):
         if(item_id):
@@ -109,10 +129,52 @@ admin.site.register(TreeItem, CatalogAdmin)
 
 
 class CatalogItemBaseAdmin(admin.ModelAdmin):
+
     def response_change(self, request, obj):
+
         if '_popup' in request.POST:
             return HttpResponse('''
                <script type="text/javascript">
                   opener.dismissAddAnotherPopup(window);
                </script>''')
         return super(CatalogItemBaseAdmin, self).response_change(request, obj)
+
+    def get_form(self, request, obj=None, **kwargs):
+
+        FormClass = super(CatalogItemBaseAdmin, self).get_form(request, obj, **kwargs)
+
+        class ModelFormCatalogWrapper(FormClass):
+
+            def clean_slug(self):
+                slug = self.cleaned_data['slug']
+                if obj is None:
+                    siblings = TreeItem.objects.root_nodes()
+                else:
+                    siblings = obj.tree.get().get_siblings()
+                target_id = request.GET.get('target', None)
+                if target_id:
+                    try:
+                        target = TreeItem.objects.get(pk=target_id)
+                        siblings = target.get_children()
+                    except TreeItem.DoesNotExist:
+                        pass
+                for sibling in siblings:
+                    if sibling.get_slug() == self.cleaned_data['slug']:
+                        raise forms.ValidationError('Slug %s already exist in this level' %self.cleaned_data['slug'])
+                return slug
+
+        return ModelFormCatalogWrapper
+
+    def save_model(self, request, obj, form, change):
+        target_id = request.GET.get('target', None)
+        siblings = TreeItem.objects.root_nodes()
+        target = None
+        if target_id:
+            try:
+                target = TreeItem.objects.get(pk=target_id)
+                siblings = target.get_children()
+            except TreeItem.DoesNotExist:
+                pass
+        obj.save()
+        if target:
+            obj.tree.get().move_to(target, 'last-child')

@@ -16,12 +16,40 @@ var delete_tree_item = function(node, tree){
     });
 }
 
+function addMessage(type, text) {
+    var message = $('<li class="' + type + '">' + text + '</li>').hide();
+    $(".messagelist").append(message);
+    message.fadeIn(500);
+
+    setTimeout(function() {
+        message.fadeOut(500, function() {
+            message.remove();
+        });
+    }, 5000);
+}
 
 var move_tree_item = function(item_id, target_id, position){
+    var moving = false;
     $.ajax({
         url: 'move/' + item_id,
         data: {'position': position, 'target_id': target_id},
+        async: false,
+        beforeSend: function() {
+            $('#overlay').fadeIn();
+        },
+        success: function(data){
+            if (data.status === 'OK') {
+                moving = true;
+                addMessage(data.type_message, data.message);
+            }
+            else {
+                moving = false;
+                addMessage(data.type_message, data.message);
+            }
+            $('#overlay').fadeOut();
+        }
     });
+    return moving;
 }
 
 
@@ -72,7 +100,6 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         });
 
         this.listenTo(this.collection, 'reset', this.render);
-        console.log();
     },
     render: function(){
         self = this;
@@ -110,6 +137,8 @@ CatalogApp.TreeView = Backbone.View.extend({
             this.resizeColumns($('#left-col'), localStorage['resize_width']);
         }
 
+        self.renderListItemsView();
+
         $("#left-col").resizable({
             handles: 'e',
             resize: function(e, ui){
@@ -146,12 +175,13 @@ CatalogApp.TreeView = Backbone.View.extend({
                 'data': {
                     'url': 'tree/',
                 }
+
             },
             'types': {
                 'leaf': {
                     'max_depth': '0',
                     'icon': 'jstree-file',
-                }
+                },
             },
             'search': {
                 'show_only_matches': true,
@@ -161,6 +191,16 @@ CatalogApp.TreeView = Backbone.View.extend({
             'contextmenu': {
                 'items': function(node){
                     var tree = self.$el.jstree(true);
+                    var submenu = {};
+                    _.each(node.data.add_links, function(link) {
+                        var menu_item = {};
+                        menu_item.label = link.label;
+                        menu_item.action = function () {
+                            self.addTreeItem(link.url);
+                        }
+                        submenu[link.label]=menu_item;
+                    });
+
                     return {
                         'Remove': {
                             'separator_before': false,
@@ -170,11 +210,23 @@ CatalogApp.TreeView = Backbone.View.extend({
                             'action': function (obj) {
                                 self.deleteTreeItem(obj, node, tree);
                             }
+                        },
+                        'Edit': {
+                            'label': 'Изменить',
+                            'icon': 'edit-item',
+                            'action': function () {
+                                self.changeTreeItem(node);
+                            }
+                        },
+                        'Add': {
+                            'label': 'Добавить',
+                            'submenu': submenu,
+                            '_disabled': node.type === 'leaf'
                         }
                     }
                 }
             },
-            'plugins' : [ 'dnd', 'search', 'types' ]
+            'plugins' : [ 'dnd', 'search', 'types', 'contextmenu']
         });
 
         this.$el.on('select_node.jstree', function(e, data){
@@ -201,6 +253,14 @@ CatalogApp.TreeView = Backbone.View.extend({
 
         return this;
     },
+    addTreeItem: function(url) {
+        var win = window.open(url + '&_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        win.focus();
+    },
+    changeTreeItem: function(node){
+        var win = window.open(node.data.change_link + '?_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        win.focus();
+    },
     deleteTreeItem: function(obj, node, tree){
         if(confirm('Вы уверенны? (если внутри обьекта есть другие обьекты они будут удалены)')){
             delete_tree_item(node, tree);
@@ -208,18 +268,24 @@ CatalogApp.TreeView = Backbone.View.extend({
     },
     checkTreeCallbacks: function(operation, node, parent, position, more){
         if (operation === "move_node" && more && more.core) {
-            console.log(operation, parent, node, position, more);
-            if(confirm('Вы уверенны?')){
-                if(parent.children.length !== 0){
-                    _.each(parent.children, function(child_id){
-                        console.log(this);
-                        console.log(parent.children.indexOf(this.get_node(child_id).id),this.get_node(child_id).text);
-                    }, this);
-                } else {
-                    move_tree_item(node.id, parent.id, 'first-child');
-                }
-                return true
+            var moving = false;
+            if(parent.children.length !== 0){
+                var i = 0;
+                _.each(parent.children, function(child_id){
+                    var target = this.get_node(child_id);
+                    var parent_target = this.get_node(target.parent);
+                    if (position === $.inArray(target.id, parent_target.children)) {
+                        moving = move_tree_item(node.id, target.id, 'left');
+                    }
+                    if (i === parent.children.length - 1 && position === parent.children.length) {
+                        moving = move_tree_item(node.id, target.id, 'right');
+                    }
+                    i++;
+                }, this);
+            } else {
+                moving = move_tree_item(node.id, parent.id, 'first-child');
             }
+            return moving;
         }
     },
     renderListItemsView: function(tree_id){
