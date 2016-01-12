@@ -7,11 +7,7 @@ def insert_in_tree(sender, instance, **kwargs):
 
     created = kwargs.pop('created', False)
     if created:
-        parent = getattr(instance, 'parent', None)
-        if parent is None:
-            tree_item = TreeItem(parent=None, content_object=instance)
-        else:
-            tree_item = TreeItem(parent=parent, content_object=instance)
+        tree_item = TreeItem(parent=None, content_object=instance)
         tree_item.save()
 
 

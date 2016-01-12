@@ -33,13 +33,6 @@ class TreeItem(MPTTModel):
         except AttributeError:
             return None
 
-    def delete(self, *args, **kwargs):
-        for child in self.get_children():
-            child.delete()
-        self.content_object.delete()
-        super(TreeItem, self).delete(*args, **kwargs)
-    delete.alters_data = True
-
 
 class CatalogBase(models.Model):
     class Meta:
@@ -64,3 +57,5 @@ class CatalogBase(models.Model):
             return reverse('catalog-item', kwargs={'path': self.get_complete_slug()})
         except NoReverseMatch:
             pass
+
+

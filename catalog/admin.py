@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-from django.contrib import admin, messages
+from django.contrib import admin
 from django.template.response import TemplateResponse
 from django.conf.urls import patterns, url
 from django.utils.translation import ugettext_lazy as _
 from django.apps import apps
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponse
+from django.core.urlresolvers import reverse
+from django import forms
 from catalog.models import TreeItem
 from catalog.utils import get_catalog_models
 
@@ -24,7 +26,7 @@ class CatalogAdmin(admin.ModelAdmin):
             'app_label': app_label,
             'title': title,
             'opts': opts,
-            'app_config': app_config
+            'app_config': app_config,
         }
         return TemplateResponse(request, self.change_list_template,
                                 context, current_app=self.admin_site.name)
@@ -41,6 +43,17 @@ class CatalogAdmin(admin.ModelAdmin):
                 a['type'] = 'leaf'
             a['id'] = node.id
             a['text'] = node.__unicode__()
+            a['data'] = {}
+            a['data']['change_link'] = reverse('admin:%s_%s_change' % (node.content_object.__class__._meta.app_label,
+                                                                       node.content_object.__class__.__name__.lower()),
+                                               args=(node.content_object.id,))
+            if node.content_object.leaf is False:
+                a['data']['add_links'] = []
+                for model_cls in get_catalog_models():
+                    a['data']['add_links'].append({'url': reverse('admin:%s_%s_add' % (model_cls._meta.app_label,
+                                                                                        model_cls._meta.model_name)) +
+                        '?target=%s' %node.id,
+                                                   'label': u'Добавить %s' % model_cls._meta.verbose_name})
             tree.append(a)
         return JsonResponse(tree, safe=False)
 
@@ -116,10 +129,52 @@ admin.site.register(TreeItem, CatalogAdmin)
 
 
 class CatalogItemBaseAdmin(admin.ModelAdmin):
+
     def response_change(self, request, obj):
+
         if '_popup' in request.POST:
             return HttpResponse('''
                <script type="text/javascript">
                   opener.dismissAddAnotherPopup(window);
                </script>''')
         return super(CatalogItemBaseAdmin, self).response_change(request, obj)
+
+    def get_form(self, request, obj=None, **kwargs):
+
+        FormClass = super(CatalogItemBaseAdmin, self).get_form(request, obj, **kwargs)
+
+        class ModelFormCatalogWrapper(FormClass):
+
+            def clean_slug(self):
+                slug = self.cleaned_data['slug']
+                if obj is None:
+                    siblings = TreeItem.objects.root_nodes()
+                else:
+                    siblings = obj.tree.get().get_siblings()
+                target_id = request.GET.get('target', None)
+                if target_id:
+                    try:
+                        target = TreeItem.objects.get(pk=target_id)
+                        siblings = target.get_children()
+                    except TreeItem.DoesNotExist:
+                        pass
+                for sibling in siblings:
+                    if sibling.get_slug() == self.cleaned_data['slug']:
+                        raise forms.ValidationError('Slug %s already exist in this level' %self.cleaned_data['slug'])
+                return slug
+
+        return ModelFormCatalogWrapper
+
+    def save_model(self, request, obj, form, change):
+        target_id = request.GET.get('target', None)
+        siblings = TreeItem.objects.root_nodes()
+        target = None
+        if target_id:
+            try:
+                target = TreeItem.objects.get(pk=target_id)
+                siblings = target.get_children()
+            except TreeItem.DoesNotExist:
+                pass
+        obj.save()
+        if target:
+            obj.tree.get().move_to(target, 'last-child')

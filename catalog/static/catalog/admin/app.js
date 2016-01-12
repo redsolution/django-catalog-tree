@@ -191,6 +191,16 @@ CatalogApp.TreeView = Backbone.View.extend({
             'contextmenu': {
                 'items': function(node){
                     var tree = self.$el.jstree(true);
+                    var submenu = {};
+                    _.each(node.data.add_links, function(link) {
+                        var menu_item = {};
+                        menu_item.label = link.label;
+                        menu_item.action = function () {
+                            self.addTreeItem(link.url);
+                        }
+                        submenu[link.label]=menu_item;
+                    });
+
                     return {
                         'Remove': {
                             'separator_before': false,
@@ -200,6 +210,18 @@ CatalogApp.TreeView = Backbone.View.extend({
                             'action': function (obj) {
                                 self.deleteTreeItem(obj, node, tree);
                             }
+                        },
+                        'Edit': {
+                            'label': 'Изменить',
+                            'icon': 'edit-item',
+                            'action': function () {
+                                self.changeTreeItem(node);
+                            }
+                        },
+                        'Add': {
+                            'label': 'Добавить',
+                            'submenu': submenu,
+                            '_disabled': node.type === 'leaf'
                         }
                     }
                 }
@@ -230,6 +252,14 @@ CatalogApp.TreeView = Backbone.View.extend({
         });
 
         return this;
+    },
+    addTreeItem: function(url) {
+        var win = window.open(url + '&_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        win.focus();
+    },
+    changeTreeItem: function(node){
+        var win = window.open(node.data.change_link + '?_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        win.focus();
     },
     deleteTreeItem: function(obj, node, tree){
         if(confirm('Вы уверенны? (если внутри обьекта есть другие обьекты они будут удалены)')){
