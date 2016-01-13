@@ -60,10 +60,6 @@ class CatalogTreeRender(Tag):
             tree_list = list(treeitem.get_children())
         else:
             tree_list = list(TreeItem.objects.root_nodes())
-        items = list(tree_list)
-        for item in items:
-            if item.get_slug() is None:
-                tree_list.remove(item)
 
         context['tree_list'] = get_content_objects(tree_list)
 
