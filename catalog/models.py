@@ -46,7 +46,7 @@ class CatalogBase(models.Model):
         try:
             url = self.slug
             if not self.tree.get().is_root_node():
-                for ancestor in self.tree.get().get_ancestors():
+                for ancestor in self.tree.get().get_ancestors(ascending=True):
                     url = ancestor.content_object.slug + '/' + url
             return url
         except AttributeError:
