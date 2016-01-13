@@ -45,17 +45,20 @@ class CatalogBase(models.Model):
     def get_complete_slug(self):
         try:
             url = self.slug
-            if not self.tree.get().is_root():
+            if not self.tree.get().is_root_node():
                 for ancestor in self.tree.get().get_ancestors():
                     url = ancestor.content_object.slug + '/' + url
             return url
         except AttributeError:
-            pass
+            return None
 
     def get_absolute_url(self):
-        try:
-            return reverse('catalog-item', kwargs={'path': self.get_complete_slug()})
-        except NoReverseMatch:
-            pass
-
+        path = self.get_complete_slug()
+        if path:
+            try:
+                return reverse('catalog-item', kwargs={'path': self.get_complete_slug()})
+            except NoReverseMatch:
+                pass
+        else:
+            return ''
 
