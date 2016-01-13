@@ -1,0 +1,2 @@
+recursive-include catalog *
+exclude *.orig *.pyc
