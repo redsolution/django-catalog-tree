@@ -32,30 +32,33 @@ class CatalogAdmin(admin.ModelAdmin):
         return TemplateResponse(request, self.change_list_template,
                                 context, current_app=self.admin_site.name)
 
+    def get_node_data(self, treeitem):
+        node = {}
+        if treeitem.parent is None:
+            node['parent'] = '#'
+        else:
+            node['parent'] = treeitem.parent.id
+        if treeitem.content_object.leaf is True:
+            node['type'] = 'leaf'
+        node['id'] = treeitem.id
+        node['text'] = treeitem.__unicode__()
+        node['data'] = {}
+        node['data']['change_link'] = reverse('admin:%s_%s_change' % (treeitem.content_object.__class__._meta.app_label,
+                                                                      treeitem.content_object.__class__.__name__.
+                                                                      lower()), args=(treeitem.content_object.id,))
+        if treeitem.content_object.leaf is False:
+            node['data']['add_links'] = []
+            for model_cls in get_catalog_models():
+                node['data']['add_links'].append({'url': reverse('admin:%s_%s_add' % (model_cls._meta.app_label,
+                                                                                      model_cls._meta.model_name)) +
+                                                  '?target=%s' % treeitem.id,
+                                                  'label': unicode(_('Add %s' % model_cls._meta.verbose_name))})
+        return node
+
     def json_tree(self, request):
         tree = []
-        for node in TreeItem.objects.all():
-            a = {}
-            if node.parent is None:
-                a['parent'] = '#'
-            else:
-                a['parent'] = node.parent.id
-            if node.content_object.leaf is True:
-                a['type'] = 'leaf'
-            a['id'] = node.id
-            a['text'] = node.__unicode__()
-            a['data'] = {}
-            a['data']['change_link'] = reverse('admin:%s_%s_change' % (node.content_object.__class__._meta.app_label,
-                                                                       node.content_object.__class__.__name__.lower()),
-                                               args=(node.content_object.id,))
-            if node.content_object.leaf is False:
-                a['data']['add_links'] = []
-                for model_cls in get_catalog_models():
-                    a['data']['add_links'].append({'url': reverse('admin:%s_%s_add' % (model_cls._meta.app_label,
-                                                                                        model_cls._meta.model_name)) +
-                                                          '?target=%s' %node.id,
-                                                   'label': unicode(_('Add %s' % model_cls._meta.verbose_name))})
-            tree.append(a)
+        for treeitem in TreeItem.objects.all():
+            tree.append(self.get_node_data(treeitem))
         return JsonResponse(tree, safe=False)
 
     def move_tree_item(self, request, item_id):
@@ -76,10 +79,18 @@ class CatalogAdmin(admin.ModelAdmin):
         return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': unicode(message)})
 
     def delete_tree_item(self, request, item_id):
-        if(item_id):
+        if item_id:
             tree = get_object_or_404(TreeItem, id=item_id)
             tree.delete()
             return HttpResponse()
+
+    def copy_tree_item(self, request, item_id):
+        if item_id:
+            source = get_object_or_404(TreeItem, id=item_id)
+            clone = source.content_object.clone()
+            clone.tree.get().move_to(source.parent, 'last-child')
+            node = self.get_node_data(clone.tree.get())
+            return JsonResponse(node, safe=False)
 
     def list_children(self, request, parent_id=None):
 
@@ -126,6 +137,7 @@ class CatalogAdmin(admin.ModelAdmin):
             url(r'^tree/$', self.admin_site.admin_view(self.json_tree)),
             url(r'^move/(\d+)$', self.admin_site.admin_view(self.move_tree_item)),
             url(r'^delete/(\d+)$', self.admin_site.admin_view(self.delete_tree_item)),
+            url(r'^copy/(\d+)$', self.admin_site.admin_view(self.copy_tree_item)),
             url(r'^list_children/(\d+)$', self.admin_site.admin_view(self.list_children)),
             url(r'^list_children/', self.admin_site.admin_view(self.list_children)),
         ) + super(CatalogAdmin, self).get_urls()

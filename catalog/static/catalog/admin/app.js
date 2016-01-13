@@ -16,6 +16,15 @@ var delete_tree_item = function(node, tree){
     });
 }
 
+var copy_tree_item = function(node, tree) {
+    $.ajax({
+        url: 'copy/' + node.id,
+        success: function(data) {
+            tree.create_node(node.parent, data);
+        }
+    })
+}
+
 function addMessage(type, text) {
     var message = $('<li class="' + type + '">' + text + '</li>').hide();
     $(".messagelist").append(message);
@@ -222,6 +231,12 @@ CatalogApp.TreeView = Backbone.View.extend({
                             'label': 'Добавить',
                             'submenu': submenu,
                             '_disabled': node.type === 'leaf'
+                        },
+                        'Copy': {
+                            'label': 'Копировать',
+                            'action': function() {
+                                self.copyTreeItem(node, tree);
+                            }
                         }
                     }
                 }
@@ -265,6 +280,9 @@ CatalogApp.TreeView = Backbone.View.extend({
         if(confirm('Вы уверенны? (если внутри обьекта есть другие обьекты они будут удалены)')){
             delete_tree_item(node, tree);
         }
+    },
+    copyTreeItem: function(node, tree) {
+        copy_tree_item(node, tree);
     },
     checkTreeCallbacks: function(operation, node, parent, position, more){
         if (operation === "move_node" && more && more.core) {
