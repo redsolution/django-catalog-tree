@@ -5,7 +5,7 @@ from catalog.utils import get_catalog_models
 register = Library()
 
 
-@register.inclusion_tag('catalog/admin/include/add_btns.html')
+@register.inclusion_tag('admin/catalog/include/add_btns.html')
 def add_btns():
     models_info = []
     for model in get_catalog_models():
