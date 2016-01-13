@@ -56,7 +56,7 @@ class CatalogBase(models.Model):
         path = self.get_complete_slug()
         if path:
             try:
-                return reverse('catalog-item', kwargs={'path': self.get_complete_slug()})
+                return reverse('catalog-item', kwargs={'path': path})
             except NoReverseMatch:
                 pass
         else:
