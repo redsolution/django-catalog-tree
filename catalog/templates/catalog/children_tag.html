@@ -1,0 +1,8 @@
+<ul>
+{% for object in children %}
+    <li><a href="{{ object.get_absolute_url }}">{{ object }}</a></li>
+{% empty %}
+    {% load i18n %}
+    <li>{% trans 'No children' %}</li>
+{% endfor %}
+</ul>

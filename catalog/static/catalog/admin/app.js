@@ -226,7 +226,7 @@ CatalogApp.TreeView = Backbone.View.extend({
                     }
                 }
             },
-            'plugins' : [ 'dnd', 'search', 'types', 'contextmenu']
+            'plugins' : [ 'dnd', 'search', 'types', 'contextmenu', 'state']
         });
 
         this.$el.on('select_node.jstree', function(e, data){

@@ -13,7 +13,7 @@ from catalog.utils import get_catalog_models
 
 
 class CatalogAdmin(admin.ModelAdmin):
-    change_list_template = u'catalog/admin/tree_list.html'
+    change_list_template = 'admin/catalog/tree_list.html'
     model = TreeItem
 
     def changelist_view(self, request):
