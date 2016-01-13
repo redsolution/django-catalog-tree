@@ -84,7 +84,7 @@
                     <thead>
                         <tr>
                             <% _.each(fields, function(field){ %>
-                                <th><%= field %></th>
+                                <th><%= field[1] %></th>
                             <% }); %>
                         </tr>
                     </thead>
@@ -92,7 +92,7 @@
                         <% _.each(items, function(item){ %>
                             <tr>
                                 <% _.each(fields, function(field){ %>
-                                    <td><%= item[field] %></td>
+                                    <td><%= item[field[0]] %></td>
                                 <% }); %>
                             </tr>
                         <% }); %>

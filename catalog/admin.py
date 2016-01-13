@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.template.response import TemplateResponse
 from django.conf.urls import patterns, url
 from django.utils.translation import ugettext_lazy as _
+from django.utils.html import strip_tags
 from django.apps import apps
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -53,7 +54,7 @@ class CatalogAdmin(admin.ModelAdmin):
                     a['data']['add_links'].append({'url': reverse('admin:%s_%s_add' % (model_cls._meta.app_label,
                                                                                         model_cls._meta.model_name)) +
                                                           '?target=%s' %node.id,
-                                                   'label': u'Добавить %s' % model_cls._meta.verbose_name})
+                                                   'label': unicode(_('Add %s' % model_cls._meta.verbose_name))})
             tree.append(a)
         return JsonResponse(tree, safe=False)
 
@@ -92,13 +93,14 @@ class CatalogAdmin(admin.ModelAdmin):
             return JsonResponse(response)
 
         fields = []
+        field_names = []
         for model_cls in get_catalog_models():
-            model_fields = model_cls._meta.get_all_field_names()
-            model_fields.remove('tree')
-            fields += model_fields
-
-        fields = set(fields)
-        fields = list(fields)
+            admin_cls = admin.site._registry[model_cls]
+            for field_name in admin_cls.list_display:
+                if field_name not in field_names and field_name != '__str__':
+                    field_label = unicode(admin.utils.label_for_field(field_name, model_cls, admin_cls))
+                    fields.append([field_name, field_label])
+                    field_names.append(field_name)
 
         nodes = []
         for item in nodes_qs:
@@ -106,9 +108,12 @@ class CatalogAdmin(admin.ModelAdmin):
             item_dict = item.content_object.__dict__
             for field in fields:
                 try:
-                    node[field] = item_dict[field]
+                    field_content = item_dict[field[0]]
+                    if isinstance(field_content, (unicode, str)):
+                        field_content = strip_tags(field_content[:200])
+                    node[field[0]] = field_content
                 except KeyError:
-                    node[field] = ''
+                    node[field[0]] = ''
             nodes.append(node)
 
         response['fields'] = fields
