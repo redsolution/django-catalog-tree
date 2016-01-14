@@ -3,15 +3,14 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils.translation import ugettext_lazy as _
-from django.db import IntegrityError
 from django.db import models
 from mptt.models import MPTTModel
 
 
 class TreeItem(MPTTModel):
     class Meta:
-        verbose_name = _('Catalog tree item')
-        verbose_name_plural = _('Catalog tree')
+        verbose_name = _('Catalog structure')
+        verbose_name_plural = _('Catalog structure')
         ordering = ['tree_id', 'lft']
 
     parent = models.ForeignKey('self', related_name='children',

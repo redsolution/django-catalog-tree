@@ -139,7 +139,10 @@ CatalogApp.TreeView = Backbone.View.extend({
         }
 
         self.renderListItemsView();
+        $(window).resize(function(event){
+            self.resizeColumns($("#left-col"));
 
+        });
         $("#left-col").resizable({
             handles: 'e',
             resize: function(e, ui){
@@ -278,7 +281,6 @@ CatalogApp.TreeView = Backbone.View.extend({
         win.focus();
     },
     checkTreeCallbacks: function(operation, node, parent, position, more){
-        console.log(more)
         if (operation === "move_node" && more && more.core) {
             var moving = false;
             if(parent.children.length !== 0){
