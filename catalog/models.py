@@ -63,34 +63,4 @@ class CatalogBase(models.Model):
         else:
             return ''
 
-    def clone(self):
-        data_fields = {}
-        for field in self._meta.fields:
-            if field.name != 'id':
-                data_fields[field.name] = getattr(self, field.name)
-                if field.name == 'slug':
-                    copy_slug = data_fields[field.name] + '-copy'
-                    incorrect_slug = True
-                    while incorrect_slug:
-                        dublicate_slug = False
-                        for sibling in self.tree.get().get_siblings():
-                            if sibling.get_slug() == copy_slug:
-                                copy_slug += '-copy'
-                                dublicate_slug = True
-                                break
-                        if not dublicate_slug:
-                            incorrect_slug = False
-
-                    data_fields[field.name] = copy_slug
-                if field.name == 'name':
-                    data_fields[field.name] += unicode(_('-copy'))
-            if field.name != 'slug' and field.name != 'id' and field.unique:
-                return None
-        while True:
-            try:
-                clone = self.__class__.objects.create(**data_fields)
-                return clone
-            except IntegrityError:
-                data_fields['slug'] += '-copy'
-
 

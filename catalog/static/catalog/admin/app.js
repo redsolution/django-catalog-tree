@@ -30,19 +30,6 @@ var delete_tree_item = function(node, tree){
     });
 }
 
-var copy_tree_item = function(node, tree) {
-    $.ajax({
-        url: 'copy/' + node.id,
-        success: function(data) {
-            if (data.status === 'OK') {
-                tree.create_node(node.parent, data);
-                addMessage(data.type_message, data.message);
-            }
-            addMessage(data.type_message, data.message);
-        }
-    })
-}
-
 var move_tree_item = function(item_id, target_id, position){
     var moving = false;
     $.ajax({
@@ -288,7 +275,8 @@ CatalogApp.TreeView = Backbone.View.extend({
         }
     },
     copyTreeItem: function(node, tree) {
-        copy_tree_item(node, tree);
+        var win = window.open(node.data.copy_link + '&_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        win.focus();
     },
     checkTreeCallbacks: function(operation, node, parent, position, more){
         if (operation === "move_node" && more && more.core) {

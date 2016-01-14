@@ -57,6 +57,10 @@ class CatalogAdmin(admin.ModelAdmin):
                                               format(treeitem.content_object.__class__._meta.app_label,
                                                      treeitem.content_object.__class__.__name__.lower()),
                                               args=(treeitem.content_object.id,))
+        node['data']['copy_link'] = reverse('admin:{0}_{1}_add'.
+                                            format(treeitem.content_object.__class__._meta.app_label,
+                                                   treeitem.content_object.__class__._meta.model_name)) + \
+                                    '?copy={}'.format(treeitem.id)
         if treeitem.content_object.leaf is False:
             node['data']['add_links'] = []
             for model_cls in get_catalog_models():
@@ -210,12 +214,35 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         target_id = request.GET.get('target', None)
+        copy_id = request.GET.get('copy', None)
+        target = None
+        if target_id or copy_id:
+            try:
+                if target_id:
+                    target = TreeItem.objects.get(pk=target_id)
+                elif copy_id:
+                    target = TreeItem.objects.get(pk=copy_id)
+            except TreeItem.DoesNotExist:
+                pass
+        obj.save()
+        if target and target_id:
+            obj.tree.get().move_to(target, 'last-child')
+        if target and copy_id:
+            obj.tree.get().move_to(target.parent, 'last-child')
+
+    def add_view(self, request, form_url="", extra_context=None):
+        data = request.GET.copy()
+        target_id = request.GET.get('copy', None)
         target = None
         if target_id:
             try:
                 target = TreeItem.objects.get(pk=target_id)
             except TreeItem.DoesNotExist:
                 pass
-        obj.save()
         if target:
-            obj.tree.get().move_to(target, 'last-child')
+            for field in target.content_object._meta.fields:
+                if field.name != 'id':
+                    data[field.name] = getattr(target.content_object, field.name)
+        request.GET = data
+        return super(CatalogItemBaseAdmin, self).add_view(request, form_url="",
+                                                 extra_context=extra_context)
