@@ -95,20 +95,18 @@ class CatalogAdmin(admin.ModelAdmin):
         if position and target_id:
             node = get_object_or_404(TreeItem, id=item_id)
             target = get_object_or_404(TreeItem, id=target_id)
-            if position != 'first-child':
-                for sibling in target.get_siblings(include_self=True):
-                    if sibling != node and \
-                       sibling.get_slug() == node.get_slug() and \
-                       node.get_slug() is not None:
-                        message = _(u'Invalid move. Slug %(slug)s '
-                                    u'exist in this level') % \
-                                  {'slug': sibling.get_slug()}
-                        return JsonResponse({
-                                            'status': 'error',
-                                            'type_message': 'error',
-                                            'message': message
-                                            },
-                                            encoder=LazyEncoder)
+            slug = node.get_slug()
+            if slug is not None and \
+                    not TreeItem.check_slug(target, position, node.get_slug(),
+                                            node=node):
+                message = _(u'Invalid move. Slug %(slug)s exist in '
+                            u'this level') % {'slug': node.get_slug()}
+                return JsonResponse({
+                                    'status': 'error',
+                                    'type_message': 'error',
+                                    'message': message
+                                    },
+                                    encoder=LazyEncoder)
             node.move_to(target, position)
         message = _(u'Successful move')
         return JsonResponse({'status': 'OK', 'type_message': 'info',
@@ -210,22 +208,26 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
             def clean_slug(self):
                 slug = self.cleaned_data['slug']
                 if obj is None:
-                    siblings = TreeItem.objects.root_nodes()
+                    target = None
+                    position = 'last-child'
                 else:
-                    siblings = obj.tree.get().get_siblings()
+                    target = obj.tree.get()
+                    position = 'left'
                 target_id = request.GET.get('target', None)
-                if target_id:
+                copy_id = request.GET.get('copy', None)
+                if target_id or copy_id:
                     try:
-                        target = TreeItem.objects.get(pk=target_id)
-                        siblings = target.get_children()
+                        if target_id:
+                            target = TreeItem.objects.get(pk=target_id)
+                        elif copy_id:
+                            target = TreeItem.objects.get(pk=copy_id).parent
                     except TreeItem.DoesNotExist:
                         pass
-                for sibling in siblings:
-                    if sibling.get_slug() == self.cleaned_data['slug']:
-                        message = _(u'Slug %(slug)s '
-                                    u'already exist in this level') % \
-                                  {'slug': self.cleaned_data['slug']}
-                        raise forms.ValidationError(message)
+                    position = 'last-child'
+                if not TreeItem.check_slug(target, position, slug):
+                    message = _(u'Slug %(slug)s already exist in this '
+                                u'level') % {'slug': self.cleaned_data['slug']}
+                    raise forms.ValidationError(message)
                 return slug
 
         return ModelFormCatalogWrapper

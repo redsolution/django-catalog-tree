@@ -25,13 +25,28 @@ class TreeItem(MPTTModel):
         if self.content_object:
             return unicode(self.content_object)
         else:
-            return 'Catalog Tree item'
+            return _(u'Catalog Tree item')
 
     def get_slug(self):
         try:
             return self.content_object.slug
         except AttributeError:
             return None
+
+    @classmethod
+    def check_slug(self, target, position, slug, node=None):
+        if target is None:
+            siblings = TreeItem.objects.root_nodes()
+        else:
+            if position == 'first-child' or position == 'last-child':
+                siblings = target.get_children()
+            else:
+                siblings = target.get_siblings(include_self=True)
+        for sibling in siblings:
+            if sibling != node and \
+               sibling.get_slug() == slug:
+                return False
+        return True
 
 
 class CatalogBase(models.Model):
@@ -61,5 +76,4 @@ class CatalogBase(models.Model):
                 pass
         else:
             return ''
-
 
