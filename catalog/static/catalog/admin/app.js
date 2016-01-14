@@ -189,8 +189,7 @@ CatalogApp.TreeView = Backbone.View.extend({
             },
             'search': {
                 'show_only_matches': true,
-                'show_only_matches_children': true,
-                'fuzzy': true
+                'show_only_matches_children': true
             },
             'contextmenu': {
                 'items': function(node){
