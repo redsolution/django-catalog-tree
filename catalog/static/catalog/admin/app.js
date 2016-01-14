@@ -75,7 +75,6 @@ CatalogApp.ItemCollection = Backbone.Collection.extend({
         return 'list_children/' + this.parent_id
     },
     parse: function(response, xhr){
-        console.log(response, xhr);
         this.fields = response.fields;
         return response.nodes
     },
@@ -279,6 +278,7 @@ CatalogApp.TreeView = Backbone.View.extend({
         win.focus();
     },
     checkTreeCallbacks: function(operation, node, parent, position, more){
+        console.log(more)
         if (operation === "move_node" && more && more.core) {
             var moving = false;
             if(parent.children.length !== 0){
@@ -295,7 +295,7 @@ CatalogApp.TreeView = Backbone.View.extend({
                     i++;
                 }, this);
             } else {
-                moving = move_tree_item(node.id, parent.id, 'first-child');
+                moving = move_tree_item(node.id, parent.id, 'last-child');
             }
             return moving;
         }

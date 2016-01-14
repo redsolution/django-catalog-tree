@@ -105,22 +105,6 @@ class CatalogAdmin(admin.ModelAdmin):
                 return JsonResponse({'status': 'error', 'type_message': 'error', 'message': message},
                                     encoder=LazyEncoder)
 
-    def copy_tree_item(self, request, item_id):
-        if item_id:
-            source = get_object_or_404(TreeItem, id=item_id)
-            clone = source.content_object.clone()
-            if clone:
-                clone.tree.get().move_to(source.parent, 'last-child')
-                node = self.get_node_data(clone.tree.get())
-                node['status'] = 'OK'
-                node['type_message'] = 'info'
-                node['message'] = _(u'Object %(object_name)s created') % {'object_name': clone}
-                return JsonResponse(node, safe=False, encoder=LazyEncoder)
-            else:
-                message = _(u'The copy operation is canceled. You can not specify values for unique fields')
-                return JsonResponse({'status': 'error', 'type_message': 'error', 'message': message},
-                                    encoder=LazyEncoder)
-
     def list_children(self, request, parent_id=None):
 
         if parent_id is None:
