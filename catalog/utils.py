@@ -10,5 +10,8 @@ def get_catalog_models():
 
 def get_content_objects(catalog_tree_items, show=True):
     if show:
-        return [item.content_object for item in catalog_tree_items if item.content_object.show]
+        return [
+            item.content_object
+            for item in catalog_tree_items if item.content_object.show
+        ]
     return [item.content_object for item in catalog_tree_items]

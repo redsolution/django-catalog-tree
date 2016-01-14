@@ -74,5 +74,7 @@ register.tag(CatalogTreeRender)
 
 @register.inclusion_tag('catalog/breadcrumbs.html', takes_context=True)
 def catalog_breadcrumbs(context, instance):
-    context.update({'breadcrumbs': get_content_objects(instance.tree.get().get_ancestors())})
+    treeitem = instance.tree.get()
+    context.update({'breadcrumbs':
+                        get_content_objects(treeitem.get_ancestors())})
     return context

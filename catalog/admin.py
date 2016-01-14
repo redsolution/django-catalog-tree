@@ -53,21 +53,33 @@ class CatalogAdmin(admin.ModelAdmin):
         node['id'] = treeitem.id
         node['text'] = treeitem.__unicode__()
         node['data'] = {}
-        node['data']['change_link'] = reverse('admin:{0}_{1}_change'.
-                                              format(treeitem.content_object.__class__._meta.app_label,
-                                                     treeitem.content_object.__class__.__name__.lower()),
-                                              args=(treeitem.content_object.id,))
-        node['data']['copy_link'] = reverse('admin:{0}_{1}_add'.
-                                            format(treeitem.content_object.__class__._meta.app_label,
-                                                   treeitem.content_object.__class__._meta.model_name)) + \
-                                    '?copy={}'.format(treeitem.id)
+        obj = treeitem.content_object
+        change_link = reverse('admin:{0}_{1}_change'. \
+                              format(obj.__class__._meta.app_label,
+                                     obj.__class__.__name__.lower()),
+                              args=(treeitem.content_object.id,))
+        copy_link = reverse('admin:{0}_{1}_add'. \
+                            format(obj.__class__._meta.app_label,
+                                   obj.__class__._meta.model_name)) + \
+                    '?copy={}'.format(treeitem.id)
+
+        node['data']['change_link'] = change_link
+        node['data']['copy_link'] = copy_link
+
         if treeitem.content_object.leaf is False:
             node['data']['add_links'] = []
             for model_cls in get_catalog_models():
                 node['data']['add_links'].\
-                    append({'url': reverse('admin:{0}_{1}_add'.format(model_cls._meta.app_label,
-                                                                      model_cls._meta.model_name)) + '?target={}'.
-                    format(treeitem.id), 'label': _(u'Add %(model_name)s') % {'model_name': model_cls._meta.verbose_name}})
+                    append({
+                           'url': reverse('admin:{0}_{1}_add'. \
+                                          format(model_cls._meta.app_label,
+                                                 model_cls._meta.model_name))
+                                  + '?target={}'.format(treeitem.id),
+                           'label': _(u'Add %(model_name)s') %
+                                    {
+                                    'model_name': model_cls._meta.verbose_name
+                                    }
+                           })
         return node
 
     def json_tree(self, request):
@@ -85,24 +97,39 @@ class CatalogAdmin(admin.ModelAdmin):
             target = get_object_or_404(TreeItem, id=target_id)
             if position != 'first-child':
                 for sibling in target.get_siblings(include_self=True):
-                    if sibling != node and sibling.get_slug() == node.get_slug() and node.get_slug() is not None:
-                        message = _(u'Invalid move. Slug %(slug)s exist in this level') % {'slug': sibling.get_slug()}
-                        return JsonResponse({'status': 'error', 'type_message': 'error', 'message': message},
+                    if sibling != node and \
+                       sibling.get_slug() == node.get_slug() and \
+                       node.get_slug() is not None:
+                        message = _(u'Invalid move. Slug %(slug)s '
+                                    u'exist in this level') % \
+                                  {'slug': sibling.get_slug()}
+                        return JsonResponse({
+                                            'status': 'error',
+                                            'type_message': 'error',
+                                            'message': message
+                                            },
                                             encoder=LazyEncoder)
             node.move_to(target, position)
         message = _(u'Successful move')
-        return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': message}, encoder=LazyEncoder)
+        return JsonResponse({'status': 'OK', 'type_message': 'info',
+                             'message': message}, encoder=LazyEncoder)
 
     def delete_tree_item(self, request, item_id):
         if item_id:
             try:
                 treeitem = TreeItem.objects.get(id=item_id)
                 treeitem.delete()
-                message = _(u'Deleted object %(object_name)s') % {'object_name': treeitem.__unicode__()}
-                return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': message}, encoder=LazyEncoder)
+                message = _(u'Deleted object %(object_name)s') % \
+                          {'object_name': treeitem.__unicode__()}
+                return JsonResponse({'status': 'OK', 'type_message': 'info',
+                                     'message': message}, encoder=LazyEncoder)
             except TreeItem.DoesNotExist:
                 message = _(u'Object does not exist')
-                return JsonResponse({'status': 'error', 'type_message': 'error', 'message': message},
+                return JsonResponse({
+                                    'status': 'error',
+                                    'type_message': 'error',
+                                    'message': message
+                                    },
                                     encoder=LazyEncoder)
 
     def list_children(self, request, parent_id=None):
@@ -122,7 +149,8 @@ class CatalogAdmin(admin.ModelAdmin):
             admin_cls = admin.site._registry[model_cls]
             for field_name in admin_cls.list_display:
                 if field_name not in field_names and field_name != '__str__':
-                    field_label = unicode(admin.utils.label_for_field(field_name, model_cls, admin_cls))
+                    field_label = unicode(admin.utils.label_for_field(
+                        field_name, model_cls, admin_cls))
                     fields.append([field_name, field_label])
                     field_names.append(field_name)
 
@@ -148,10 +176,14 @@ class CatalogAdmin(admin.ModelAdmin):
     def get_urls(self):
         return patterns('',
             url(r'^tree/$', self.admin_site.admin_view(self.json_tree)),
-            url(r'^move/(\d+)$', self.admin_site.admin_view(self.move_tree_item)),
-            url(r'^delete/(\d+)$', self.admin_site.admin_view(self.delete_tree_item)),
-            url(r'^list_children/(\d+)$', self.admin_site.admin_view(self.list_children)),
-            url(r'^list_children/', self.admin_site.admin_view(self.list_children)),
+            url(r'^move/(\d+)$',
+                self.admin_site.admin_view(self.move_tree_item)),
+            url(r'^delete/(\d+)$',
+                self.admin_site.admin_view(self.delete_tree_item)),
+            url(r'^list_children/(\d+)$',
+                self.admin_site.admin_view(self.list_children)),
+            url(r'^list_children/',
+                self.admin_site.admin_view(self.list_children)),
         ) + super(CatalogAdmin, self).get_urls()
 
 admin.site.register(TreeItem, CatalogAdmin)
@@ -170,7 +202,8 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
 
     def get_form(self, request, obj=None, **kwargs):
 
-        FormClass = super(CatalogItemBaseAdmin, self).get_form(request, obj, **kwargs)
+        FormClass = super(CatalogItemBaseAdmin, self).get_form(request, obj,
+                                                               **kwargs)
 
         class ModelFormCatalogWrapper(FormClass):
 
@@ -189,8 +222,10 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
                         pass
                 for sibling in siblings:
                     if sibling.get_slug() == self.cleaned_data['slug']:
-                        raise forms.ValidationError(_(u'Slug %(slug)s already exist in this level') %
-                                                    {'slug': self.cleaned_data['slug']})
+                        message = _(u'Slug %(slug)s '
+                                    u'already exist in this level') % \
+                                  {'slug': self.cleaned_data['slug']}
+                        raise forms.ValidationError(message)
                 return slug
 
         return ModelFormCatalogWrapper
@@ -225,7 +260,8 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
         if target:
             for field in target.content_object._meta.fields:
                 if field.name != 'id':
-                    data[field.name] = getattr(target.content_object, field.name)
+                    data[field.name] = getattr(target.content_object,
+                                               field.name)
         request.GET = data
         return super(CatalogItemBaseAdmin, self).add_view(request, form_url="",
                                                  extra_context=extra_context)
