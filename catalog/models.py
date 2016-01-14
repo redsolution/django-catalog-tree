@@ -84,6 +84,8 @@ class CatalogBase(models.Model):
                     data_fields[field.name] = copy_slug
                 if field.name == 'name':
                     data_fields[field.name] += unicode(_('-copy'))
+            if field.name != 'slug' and field.name != 'id' and field.unique:
+                return None
         while True:
             try:
                 clone = self.__class__.objects.create(**data_fields)

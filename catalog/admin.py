@@ -80,17 +80,29 @@ class CatalogAdmin(admin.ModelAdmin):
 
     def delete_tree_item(self, request, item_id):
         if item_id:
-            tree = get_object_or_404(TreeItem, id=item_id)
-            tree.delete()
-            return HttpResponse()
+            try:
+                treeitem = TreeItem.objects.get(id=item_id)
+                treeitem.delete()
+                message = _('Deleted object %s' % treeitem.__unicode__())
+                return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': unicode(message)})
+            except TreeItem.DoesNotExist:
+                message = _('Object does not exist')
+                return JsonResponse({'status': 'error', 'type_message': 'error', 'message': unicode(message)})
 
     def copy_tree_item(self, request, item_id):
         if item_id:
             source = get_object_or_404(TreeItem, id=item_id)
             clone = source.content_object.clone()
-            clone.tree.get().move_to(source.parent, 'last-child')
-            node = self.get_node_data(clone.tree.get())
-            return JsonResponse(node, safe=False)
+            if clone:
+                clone.tree.get().move_to(source.parent, 'last-child')
+                node = self.get_node_data(clone.tree.get())
+                node['status'] = 'OK'
+                node['type_message'] = 'info'
+                node['message'] = unicode(_('Object %s created' % clone.__unicode__()))
+                return JsonResponse(node, safe=False)
+            else:
+                message = _('The copy operation is canceled. You can not specify values for unique fields')
+                return JsonResponse({'status': 'error', 'type_message': 'error', 'message': unicode(message)})
 
     def list_children(self, request, parent_id=None):
 

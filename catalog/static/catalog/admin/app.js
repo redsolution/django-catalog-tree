@@ -5,26 +5,6 @@ var templateHelper = function(templateName, data){
     return _.template($('#'+templateName).html(), data)
 }
 
-
-var delete_tree_item = function(node, tree){
-    var item_id = node.id
-    $.ajax({
-        url: 'delete/' + item_id,
-        success: function(data){
-            tree.delete_node(node);
-        }
-    });
-}
-
-var copy_tree_item = function(node, tree) {
-    $.ajax({
-        url: 'copy/' + node.id,
-        success: function(data) {
-            tree.create_node(node.parent, data);
-        }
-    })
-}
-
 function addMessage(type, text) {
     var message = $('<li class="' + type + '">' + text + '</li>').hide();
     $(".messagelist").append(message);
@@ -35,6 +15,32 @@ function addMessage(type, text) {
             message.remove();
         });
     }, 5000);
+}
+
+var delete_tree_item = function(node, tree){
+    var item_id = node.id
+    $.ajax({
+        url: 'delete/' + item_id,
+        success: function(data) {
+            if (data.status === 'OK') {
+                tree.delete_node(node);
+            }
+            addMessage(data.type_message, data.message);
+        }
+    });
+}
+
+var copy_tree_item = function(node, tree) {
+    $.ajax({
+        url: 'copy/' + node.id,
+        success: function(data) {
+            if (data.status === 'OK') {
+                tree.create_node(node.parent, data);
+                addMessage(data.type_message, data.message);
+            }
+            addMessage(data.type_message, data.message);
+        }
+    })
 }
 
 var move_tree_item = function(item_id, target_id, position){
