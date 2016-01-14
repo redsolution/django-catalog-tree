@@ -150,7 +150,6 @@ class CatalogAdmin(admin.ModelAdmin):
             url(r'^tree/$', self.admin_site.admin_view(self.json_tree)),
             url(r'^move/(\d+)$', self.admin_site.admin_view(self.move_tree_item)),
             url(r'^delete/(\d+)$', self.admin_site.admin_view(self.delete_tree_item)),
-            url(r'^copy/(\d+)$', self.admin_site.admin_view(self.copy_tree_item)),
             url(r'^list_children/(\d+)$', self.admin_site.admin_view(self.list_children)),
             url(r'^list_children/', self.admin_site.admin_view(self.list_children)),
         ) + super(CatalogAdmin, self).get_urls()
