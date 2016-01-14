@@ -29,6 +29,5 @@ def get_sitemaps():
         except FieldDoesNotExist:
             pass
         else:
-            sitemaps['%s.%s' % (
-                model._meta.app_label, model._meta.module_name)] = CatalogSitemap(model)
+            sitemaps['{0}.{1}'.format(model._meta.app_label, model._meta.module_name)] = CatalogSitemap(model)
     return sitemaps

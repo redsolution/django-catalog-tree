@@ -13,7 +13,6 @@ def add_btns():
         if model._meta.verbose_name:
             model_name = model._meta.verbose_name
 
-        models_info.append([reverse('admin:%s_%s_add' %
-                                    (model._meta.app_label, model._meta.model_name)),
-                         model_name])
+        models_info.append([reverse('admin:{0}_{1}_add'.format(model._meta.app_label, model._meta.model_name)),
+                            model_name])
     return {'models_info': models_info, }

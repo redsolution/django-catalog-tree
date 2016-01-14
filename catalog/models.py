@@ -14,7 +14,7 @@ class TreeItem(MPTTModel):
         verbose_name_plural = _('Catalog tree')
         ordering = ['tree_id', 'lft']
 
-    parent = models.ForeignKey('self', related_name=_('children'),
+    parent = models.ForeignKey('self', related_name='children',
                                verbose_name=_('Parent node'), null=True,
                                blank=True, editable=False)
 

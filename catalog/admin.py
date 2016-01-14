@@ -4,6 +4,9 @@ from django.template.response import TemplateResponse
 from django.conf.urls import patterns, url
 from django.utils.translation import ugettext_lazy as _
 from django.utils.html import strip_tags
+from django.utils.functional import Promise
+from django.utils.encoding import force_text
+from django.core.serializers.json import DjangoJSONEncoder
 from django.apps import apps
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -11,6 +14,13 @@ from django.core.urlresolvers import reverse
 from django import forms
 from catalog.models import TreeItem
 from catalog.utils import get_catalog_models
+
+
+class LazyEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Promise):
+            return force_text(obj)
+        return super(LazyEncoder, self).default(obj)
 
 
 class CatalogAdmin(admin.ModelAdmin):
@@ -43,23 +53,24 @@ class CatalogAdmin(admin.ModelAdmin):
         node['id'] = treeitem.id
         node['text'] = treeitem.__unicode__()
         node['data'] = {}
-        node['data']['change_link'] = reverse('admin:%s_%s_change' % (treeitem.content_object.__class__._meta.app_label,
-                                                                      treeitem.content_object.__class__.__name__.
-                                                                      lower()), args=(treeitem.content_object.id,))
+        node['data']['change_link'] = reverse('admin:{0}_{1}_change'.
+                                              format(treeitem.content_object.__class__._meta.app_label,
+                                                     treeitem.content_object.__class__.__name__.lower()),
+                                              args=(treeitem.content_object.id,))
         if treeitem.content_object.leaf is False:
             node['data']['add_links'] = []
             for model_cls in get_catalog_models():
-                node['data']['add_links'].append({'url': reverse('admin:%s_%s_add' % (model_cls._meta.app_label,
-                                                                                      model_cls._meta.model_name)) +
-                                                  '?target=%s' % treeitem.id,
-                                                  'label': unicode(_('Add %s' % model_cls._meta.verbose_name))})
+                node['data']['add_links'].\
+                    append({'url': reverse('admin:{0}_{1}_add'.format(model_cls._meta.app_label,
+                                                                      model_cls._meta.model_name)) + '?target={}'.
+                    format(treeitem.id), 'label': _(u'Add %(model_name)s') % {'model_name': model_cls._meta.verbose_name}})
         return node
 
     def json_tree(self, request):
         tree = []
         for treeitem in TreeItem.objects.all():
             tree.append(self.get_node_data(treeitem))
-        return JsonResponse(tree, safe=False)
+        return JsonResponse(tree, safe=False, encoder=LazyEncoder)
 
     def move_tree_item(self, request, item_id):
         position = request.GET.get('position', None)
@@ -71,23 +82,24 @@ class CatalogAdmin(admin.ModelAdmin):
             if position != 'first-child':
                 for sibling in target.get_siblings(include_self=True):
                     if sibling != node and sibling.get_slug() == node.get_slug() and node.get_slug() is not None:
-                        message = _('Invalid move. Object %s with slug %s exist in this level' %
-                                          (sibling.__unicode__(), sibling.get_slug()))
-                        return JsonResponse({'status': 'error', 'type_message': 'error', 'message': unicode(message)})
+                        message = _(u'Invalid move. Slug %(slug)s exist in this level') % {'slug': sibling.get_slug()}
+                        return JsonResponse({'status': 'error', 'type_message': 'error', 'message': message},
+                                            encoder=LazyEncoder)
             node.move_to(target, position)
-        message = _('Successful move')
-        return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': unicode(message)})
+        message = _(u'Successful move')
+        return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': message}, encoder=LazyEncoder)
 
     def delete_tree_item(self, request, item_id):
         if item_id:
             try:
                 treeitem = TreeItem.objects.get(id=item_id)
                 treeitem.delete()
-                message = _('Deleted object %s' % treeitem.__unicode__())
-                return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': unicode(message)})
+                message = _(u'Deleted object %(object_name)s') % {'object_name': treeitem.__unicode__()}
+                return JsonResponse({'status': 'OK', 'type_message': 'info', 'message': message}, encoder=LazyEncoder)
             except TreeItem.DoesNotExist:
-                message = _('Object does not exist')
-                return JsonResponse({'status': 'error', 'type_message': 'error', 'message': unicode(message)})
+                message = _(u'Object does not exist')
+                return JsonResponse({'status': 'error', 'type_message': 'error', 'message': message},
+                                    encoder=LazyEncoder)
 
     def copy_tree_item(self, request, item_id):
         if item_id:
@@ -98,11 +110,12 @@ class CatalogAdmin(admin.ModelAdmin):
                 node = self.get_node_data(clone.tree.get())
                 node['status'] = 'OK'
                 node['type_message'] = 'info'
-                node['message'] = unicode(_('Object %s created' % clone.__unicode__()))
-                return JsonResponse(node, safe=False)
+                node['message'] = _(u'Object %(object_name)s created') % {'object_name': clone}
+                return JsonResponse(node, safe=False, encoder=LazyEncoder)
             else:
-                message = _('The copy operation is canceled. You can not specify values for unique fields')
-                return JsonResponse({'status': 'error', 'type_message': 'error', 'message': unicode(message)})
+                message = _(u'The copy operation is canceled. You can not specify values for unique fields')
+                return JsonResponse({'status': 'error', 'type_message': 'error', 'message': message},
+                                    encoder=LazyEncoder)
 
     def list_children(self, request, parent_id=None):
 
@@ -189,7 +202,8 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
                         pass
                 for sibling in siblings:
                     if sibling.get_slug() == self.cleaned_data['slug']:
-                        raise forms.ValidationError('Slug %s already exist in this level' %self.cleaned_data['slug'])
+                        raise forms.ValidationError(_(u'Slug %(slug)s already exist in this level') %
+                                                    {'slug': self.cleaned_data['slug']})
                 return slug
 
         return ModelFormCatalogWrapper

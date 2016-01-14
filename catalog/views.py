@@ -23,7 +23,7 @@ class CatalogItemView(DetailView):
             names = super(CatalogItemView, self).get_template_names()
         except ImproperlyConfigured:
             names = []
-        names.append("catalog/%s.html" % self.object._meta.model_name)
+        names.append("catalog/{}.html".format(self.object._meta.model_name))
         return names
 
     def get_object(self, queryset=None):

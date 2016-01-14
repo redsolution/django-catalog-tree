@@ -1,0 +1,98 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-01-14 11:55+0500\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: admin.py:66
+#, python-format
+msgid "Add %(model_name)s"
+msgstr "Добавить %(model_name)s"
+
+#: admin.py:85
+#, python-format
+msgid "Invalid move. Slug %(slug)s exist in this level"
+msgstr ""
+"Ошибка при перемещении объекта. Слаг %(slug)s уже есть на данном уровне "
+"вложенности"
+
+#: admin.py:89
+msgid "Successful move"
+msgstr "Перемещение выполнено успешно"
+
+#: admin.py:97
+#, python-format
+msgid "Deleted object %(object_name)s"
+msgstr "Объект  %(object_name)s удален"
+
+#: admin.py:100
+msgid "Object does not exist"
+msgstr "Объект не существует"
+
+#: admin.py:113
+#, python-format
+msgid "Object %(object_name)s created"
+msgstr "Объект %(object_name)s создан"
+
+#: admin.py:116
+msgid ""
+"The copy operation is canceled. You can not specify values for unique fields"
+msgstr ""
+"Операция копирования отменена. Невозможно указать значения для уникальных "
+"полей"
+
+#: admin.py:205
+#, python-format
+msgid "Slug %(slug)s already exist in this level"
+msgstr "Слаг %(slug)s уже есть на данном уровне вложенности"
+
+#: apps.py:7
+msgid "Catalog"
+msgstr "Каталог"
+
+#: models.py:13
+msgid "Catalog tree item"
+msgstr "Объект каталога"
+
+#: models.py:14
+msgid "Catalog tree"
+msgstr "Объекты каталога"
+
+#: models.py:18
+msgid "Parent node"
+msgstr "Родительский элемент"
+
+#: models.py:44
+msgid "Show on site"
+msgstr "Отображать на сайте"
+
+#: models.py:86
+msgid "-copy"
+msgstr "-копия"
+
+#: templates/admin/catalog/tree_list.html:46
+msgid "Home"
+msgstr "На главную"
+
+#: templates/catalog/children_tag.html:6
+msgid "No children"
+msgstr "Нет дочерних элементов"
+
+#: templates/catalog/root.html:12
+msgid "Catalog is empty"
+msgstr "Каталог пуст"
