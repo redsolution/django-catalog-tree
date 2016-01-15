@@ -138,7 +138,11 @@ CatalogApp.TreeView = Backbone.View.extend({
             this.resizeColumns($('#left-col'), localStorage['resize_width']);
         }
 
-        self.renderListItemsView();
+        $("#catalog-root-btn").click(function(event){
+            $(".jstree-clicked").removeClass("jstree-clicked");
+            self.renderListItemsView();
+        });
+
         $(window).resize(function(event){
             self.resizeColumns($("#left-col"));
 

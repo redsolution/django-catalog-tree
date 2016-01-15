@@ -1,3 +1,7 @@
+.module {
+    border: 1px solid #ccc;
+}
+
 #right-col {
     width: 75%;
     display: inline-block;
@@ -17,7 +21,6 @@
     display: inline-block;
     width: 100%;
     position: relative;
-    border: 1px solid #ccc;
 }
 
 #overlay {
@@ -44,6 +47,14 @@
     padding-left: 0;
 }
 
+#catalog-root-btn {
+    line-height: 24px;
+    font-size: 13px;
+    cursor: pointer;
+    height: 24px;
+    width: 75px;
+}
+
 .catalog #tree_container {
     height: 100%;
 }
@@ -53,4 +64,14 @@
     background-repeat: no-repeat;
     background-color: transparent;
     background-position: -36px -66px;
+}
+
+.jstree-default .jstree-clicked {
+    background: #79aec8;
+    color: #fff;
+}
+
+table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp {
+    background-color: #79aec8;
+    color: #fff;
 }

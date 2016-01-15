@@ -158,7 +158,7 @@ class CatalogAdmin(admin.ModelAdmin):
             admin_cls = admin.site._registry[type(item.content_object)]
             for field in fields:
                 try:
-                    value = admin.util.lookup_field(field[0],
+                    value = admin.utils.lookup_field(field[0],
                                                     item.content_object,
                                                     admin_cls)[2]
                 except AttributeError:
