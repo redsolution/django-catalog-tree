@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-01-14 17:11+0500\n"
+"POT-Creation-Date: 2016-01-15 10:48+0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -44,7 +44,7 @@ msgstr "Объект  %(object_name)s удален"
 msgid "Object does not exist"
 msgstr "Объект не существует"
 
-#: admin.py:228
+#: admin.py:230
 #, python-format
 msgid "Slug %(slug)s already exist in this level"
 msgstr "Слаг %(slug)s уже есть на данном уровне вложенности"
@@ -69,9 +69,17 @@ msgstr "Объект каталога"
 msgid "Show on site"
 msgstr "Отображать на сайте"
 
+#: templates/admin/catalog/include/add_btns.html:9
+msgid "Add"
+msgstr "Добавить"
+
 #: templates/admin/catalog/tree_list.html:46
 msgid "Home"
 msgstr "На главную"
+
+#: templates/admin/catalog/tree_list.html:73
+msgid "search, (esc) for clear"
+msgstr "Поиск, для отмены нажмите (esc)"
 
 #: templates/catalog/children_tag.html:6
 msgid "No children"
