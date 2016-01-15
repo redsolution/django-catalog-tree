@@ -10,6 +10,9 @@ TREE_TYPE_EXPANDED = 'expanded'
 TREE_TYPE_COLLAPSED = 'collapsed'
 TREE_TYPE_DRILLDOWN = 'drilldown'
 
+DESCENDANTS_TYPE_ALL = 'all'
+DESCENDANTS_TYPE_DIRECT = 'direct'
+
 register = template.Library()
 
 
@@ -22,13 +25,19 @@ class CatalogChildren(Tag):
         Argument('instance', required=False),
         'type',
         Argument('model_type', required=False, resolve=False),
+        'descendants',
+        Argument('descendants', required=False,
+                 default=DESCENDANTS_TYPE_DIRECT, resolve=False),
         'as',
         Argument('varname', required=False, resolve=False)
     )
 
-    def render_tag(self, context, instance, model_type, varname):
+    def render_tag(self, context, instance, model_type, descendants, varname):
         if instance:
-            children = instance.tree.get().get_children()
+            if descendants == DESCENDANTS_TYPE_ALL:
+                children = instance.tree.get().get_descendants()
+            elif descendants == DESCENDANTS_TYPE_DIRECT:
+                children = instance.tree.get().get_children()
             if model_type:
                 children = children.filter(content_type__model=model_type)
         else:
