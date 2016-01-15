@@ -210,10 +210,12 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
             def clean_slug(self):
                 slug = self.cleaned_data['slug']
                 if obj is None:
+                    node = None
                     target = None
                     position = 'last-child'
                 else:
-                    target = obj.tree.get()
+                    node = obj.tree.get()
+                    target = node
                     position = 'left'
                 target_id = request.GET.get('target', None)
                 copy_id = request.GET.get('copy', None)
@@ -226,7 +228,7 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
                     except TreeItem.DoesNotExist:
                         pass
                     position = 'last-child'
-                if not TreeItem.check_slug(target, position, slug):
+                if not TreeItem.check_slug(target, position, slug, node):
                     message = _(u'Slug %(slug)s already exist in this '
                                 u'level') % {'slug': self.cleaned_data['slug']}
                     raise forms.ValidationError(message)

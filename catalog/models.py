@@ -34,7 +34,7 @@ class TreeItem(MPTTModel):
             return None
 
     @classmethod
-    def check_slug(self, target, position, slug, node=None):
+    def check_slug(self, target, position, slug, node):
         if target is None:
             siblings = TreeItem.objects.root_nodes()
         else:
