@@ -5,7 +5,7 @@ from django.conf.urls import patterns, url
 from django.utils.translation import ugettext_lazy as _
 from django.utils.html import strip_tags
 from django.utils.functional import Promise
-from django.utils.encoding import force_text
+from django.utils.encoding import force_text, smart_unicode
 from django.core.serializers.json import DjangoJSONEncoder
 from django.apps import apps
 from django.shortcuts import get_object_or_404
@@ -155,15 +155,17 @@ class CatalogAdmin(admin.ModelAdmin):
         nodes = []
         for item in nodes_qs:
             node = {}
-            item_dict = item.content_object.__dict__
+            admin_cls = admin.site._registry[type(item.content_object)]
             for field in fields:
                 try:
-                    field_content = item_dict[field[0]]
-                    if isinstance(field_content, (unicode, str)):
-                        field_content = strip_tags(field_content[:200])
-                    node[field[0]] = field_content
-                except KeyError:
-                    node[field[0]] = ''
+                    value = admin.util.lookup_field(field[0],
+                                                    item.content_object,
+                                                    admin_cls)[2]
+                except AttributeError:
+                    value = ''
+                if isinstance(value, (unicode, str)):
+                    value = strip_tags(value[:100])
+                node[field[0]] = smart_unicode(value, strings_only=True)
             nodes.append(node)
 
         response['fields'] = fields
