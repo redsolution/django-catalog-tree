@@ -75,3 +75,11 @@ table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSo
     background-color: #79aec8;
     color: #fff;
 }
+
+#list_table td input {
+    float: left;
+}
+
+#list_table td.error input {
+    border: 1px solid #ff0000;
+}

@@ -3,10 +3,11 @@ from django.contrib import admin
 from django.template.response import TemplateResponse
 from django.conf.urls import patterns, url
 from django.utils.translation import ugettext_lazy as _
-from django.utils.html import strip_tags
 from django.utils.functional import Promise
-from django.utils.encoding import force_text, smart_unicode
+from django.utils.encoding import force_text
 from django.core.serializers.json import DjangoJSONEncoder
+from django.core.exceptions import ValidationError
+from django.db.models.fields import FieldDoesNotExist
 from django.apps import apps
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponse
@@ -14,6 +15,7 @@ from django.core.urlresolvers import reverse
 from django import forms
 from catalog.models import TreeItem
 from catalog.utils import get_catalog_models
+from catalog.grid import GridRow
 
 
 class LazyEncoder(DjangoJSONEncoder):
@@ -38,6 +40,7 @@ class CatalogAdmin(admin.ModelAdmin):
             'title': title,
             'opts': opts,
             'app_config': app_config,
+            'site_header': self.admin_site.site_header,
         }
         return TemplateResponse(request, self.change_list_template,
                                 context, current_app=self.admin_site.name)
@@ -112,23 +115,47 @@ class CatalogAdmin(admin.ModelAdmin):
         return JsonResponse({'status': 'OK', 'type_message': 'info',
                              'message': message}, encoder=LazyEncoder)
 
-    def delete_tree_item(self, request, item_id):
-        if item_id:
+    def edit_tree_item(self, request, item_id):
+        try:
+            treeitem = TreeItem.objects.get(id=item_id)
+        except TreeItem.DoesNotExist:
+            message = _(u'Object does not exist')
+            return JsonResponse({'status': 'error', 'type_message': 'error',
+                                 'message': message}, encoder=LazyEncoder)
+        obj = treeitem.content_object
+        if 'field' in request.GET and 'value' in request.GET:
+            field = request.GET['field']
+            value = request.GET['value']
             try:
-                treeitem = TreeItem.objects.get(id=item_id)
-                treeitem.delete()
-                message = _(u'Deleted object %(object_name)s') % \
-                          {'object_name': treeitem.__unicode__()}
-                return JsonResponse({'status': 'OK', 'type_message': 'info',
+                modelfield = obj.__class__._meta.get_field(field)
+                setattr(obj, field,
+                        modelfield.clean(modelfield.to_python(value), obj))
+            except (ValidationError, FieldDoesNotExist):
+                message = _(u'Correct the mistakes')
+                return JsonResponse({'status': 'error',
+                                     'type_message': 'error',
                                      'message': message}, encoder=LazyEncoder)
-            except TreeItem.DoesNotExist:
-                message = _(u'Object does not exist')
-                return JsonResponse({
-                                    'status': 'error',
-                                    'type_message': 'error',
-                                    'message': message
-                                    },
-                                    encoder=LazyEncoder)
+            obj.save()
+            message = _(u'Save changes')
+            return JsonResponse({'status': 'OK', 'type_message': 'info',
+                                 'message': message}, encoder=LazyEncoder)
+        else:
+            message = _(u'Missing required data')
+            return JsonResponse({'status': 'error', 'type_message': 'error',
+                                 'message': message}, encoder=LazyEncoder)
+
+    def delete_tree_item(self, request, item_id):
+        try:
+            treeitem = TreeItem.objects.get(id=item_id)
+            treeitem.delete()
+            message = _(u'Deleted object %(object_name)s') % \
+                      {'object_name': treeitem.__unicode__()}
+            return JsonResponse({'status': 'OK', 'type_message': 'info',
+                                 'message': message}, encoder=LazyEncoder)
+        except TreeItem.DoesNotExist:
+            message = _(u'Object does not exist')
+            return JsonResponse({'status': 'error', 'type_message': 'error',
+                                 'message': message}, encoder=LazyEncoder)
 
     def list_children(self, request, parent_id=None):
 
@@ -154,19 +181,10 @@ class CatalogAdmin(admin.ModelAdmin):
 
         nodes = []
         for item in nodes_qs:
-            node = {}
             admin_cls = admin.site._registry[type(item.content_object)]
-            for field in fields:
-                try:
-                    value = admin.utils.lookup_field(field[0],
-                                                    item.content_object,
-                                                    admin_cls)[2]
-                except AttributeError:
-                    value = ''
-                if isinstance(value, (unicode, str)):
-                    value = strip_tags(value[:100])
-                node[field[0]] = smart_unicode(value, strings_only=True)
-            nodes.append(node)
+            node = GridRow(item.content_object, [field[0] for field in fields],
+                           admin_cls)
+            nodes.append(node.json_data())
 
         response['fields'] = fields
         response['nodes'] = nodes
@@ -180,6 +198,8 @@ class CatalogAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.move_tree_item)),
             url(r'^delete/(\d+)$',
                 self.admin_site.admin_view(self.delete_tree_item)),
+            url(r'^edit/(\d+)$',
+                self.admin_site.admin_view(self.edit_tree_item)),
             url(r'^list_children/(\d+)$',
                 self.admin_site.admin_view(self.list_children)),
             url(r'^list_children/',

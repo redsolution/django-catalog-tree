@@ -89,7 +89,9 @@ CatalogApp.ListItemsView = Backbone.View.extend({
     el: '#list_items_container',
     tableEl: '#list_table',
     template: 'table_items_tpl',
+    inputTemplate: 'input_tpl',
     initialize: function(options){
+        var self = this;
         if(options.parent_id){
             this.parent_id = options.parent_id;
         } else {
@@ -101,26 +103,89 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         });
 
         this.listenTo(this.collection, 'reset', this.render);
+        this.listenTo(this, 'afterRender', this.initSorter);
     },
     render: function(){
-        self = this;
+        $(this.tableEl).trigger("destroy");
         this.$el.html(
             templateHelper(
                 this.template,
                 {fields: this.collection.fields, items: this.collection.toJSON()}
             )
         );
-        $(document).ready(function(){
-            $(self.tableEl).tablesorter({
-                sortList: [[0,0]]
-            });
-        });
+        this.trigger('afterRender');
         return this
     },
     reRender: function(options){
         this.collection.changeParentId(options.parent_id);
-        $(this.tableEl).trigger('destroy');
         return this
+    },
+    initSorter: function(){
+        self = this;
+        $(document).ready(function(){
+            $(self.tableEl).tablesorter({
+                sortList: [[0,0]],
+                theme: 'ice',
+                widgets: ['resizable'],
+                textExtraction:function(s){
+                    if($(s).find('img').length == 0) return $(s).text();
+                    return $(s).find('img').attr('alt');
+                }
+            });
+            self.$el.find('.editable').on('click', function(event){
+                if (!$(this).hasClass('active-edit')) {
+                    var value = $.trim($(this).html()),
+                        type = $(this).data('type')
+                    if (type == 'checkbox') value = $(this).find('img').attr('alt');
+                    var html = templateHelper(self.inputTemplate, {value: value, type: type});
+                    $(this).html(html);
+                    $(this).addClass('active-edit');
+                    $(this).find('input').focus().val(value);
+                }
+            });
+            self.$el.find('.editable').on('click', '.save', function(event){
+                event.stopPropagation();
+                var edit_cell = $(this).parent();
+                var item_id = $(this).parents('tr').attr('id'),
+                    field = edit_cell.data('name'),
+                    value = edit_cell.find('input').val()
+                if (edit_cell.find('input').attr('type') == 'checkbox') {
+                    if (edit_cell.find('input').prop("checked")) {
+                        value = 't';
+                    }
+                    else {
+                        value = 'f';
+                    }
+                }
+                $.ajax({
+                    url: 'edit/' + item_id,
+                    data: {'field': field, 'value': value},
+                    async: false,
+                    success: function(data){
+                        if (data.status === 'OK') {
+                            edit_cell.removeClass('active-edit error');
+                            if (edit_cell.find('input').attr('type') == 'checkbox') {
+                                if (value == 't') {
+                                    edit_cell.html('<img src="/static/admin/img/icon-yes.gif" alt="' + value + '">');
+                                }
+                                else {
+                                    edit_cell.html('<img src="/static/admin/img/icon-no.gif" alt="' + value + '">');
+                                }
+                            }
+                            else {
+                                edit_cell.html(value);
+                            }
+                            addMessage(data.type_message, data.message);
+                        }
+                        else {
+                            edit_cell.addClass('error');
+                            addMessage(data.type_message, data.message);
+                        }
+                        $(self.tableEl).trigger("update");
+                    }
+                });
+            });
+        });
     }
 });
 
@@ -315,7 +380,6 @@ CatalogApp.TreeView = Backbone.View.extend({
                 parent_id: tree_id
             });
         }
-
     }
 });
 
