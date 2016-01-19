@@ -17,6 +17,8 @@ from catalog.models import TreeItem
 from catalog.utils import get_catalog_models
 from catalog.grid import GridRow
 
+import json
+
 
 class LazyEncoder(DjangoJSONEncoder):
     def default(self, obj):
@@ -44,6 +46,20 @@ class CatalogAdmin(admin.ModelAdmin):
         }
         return TemplateResponse(request, self.change_list_template,
                                 context, current_app=self.admin_site.name)
+
+    def get_display_fields(self):
+        fields = []
+        field_names = []
+        for model_cls in get_catalog_models():
+            admin_cls = admin.site._registry[model_cls]
+            for field_name in admin_cls.list_display:
+                if field_name not in field_names and field_name != '__str__':
+                    field_label = unicode(admin.utils.label_for_field(
+                        field_name, model_cls, admin_cls))
+                    fields.append([field_name, field_label])
+                    field_names.append(field_name)
+        return fields
+
 
     def get_node_data(self, treeitem):
         node = {}
@@ -115,32 +131,41 @@ class CatalogAdmin(admin.ModelAdmin):
         return JsonResponse({'status': 'OK', 'type_message': 'info',
                              'message': message}, encoder=LazyEncoder)
 
-    def edit_tree_item(self, request, item_id):
-        try:
-            treeitem = TreeItem.objects.get(id=item_id)
-        except TreeItem.DoesNotExist:
-            message = _(u'Object does not exist')
-            return JsonResponse({'status': 'error', 'type_message': 'error',
-                                 'message': message}, encoder=LazyEncoder)
-        obj = treeitem.content_object
-        if 'field' in request.GET and 'value' in request.GET:
-            field = request.GET['field']
-            value = request.GET['value']
+    def edit_tree_item(self, request):
+        if request.method == 'PUT':
+            data = json.loads(request.body.decode('utf-8'))
             try:
-                modelfield = obj.__class__._meta.get_field(field)
-                setattr(obj, field,
-                        modelfield.clean(modelfield.to_python(value), obj))
-            except (ValidationError, FieldDoesNotExist):
-                message = _(u'Correct the mistakes')
+                treeitem = TreeItem.objects.get(id=data['id'])
+            except TreeItem.DoesNotExist:
+                message = _(u'Object does not exist')
                 return JsonResponse({'status': 'error',
                                      'type_message': 'error',
-                                     'message': message}, encoder=LazyEncoder)
+                                     'message': message},
+                                    encoder=LazyEncoder,)
+
+            obj = treeitem.content_object
+            for field in data:
+                if field != 'id':
+                    value = data[field]['value']
+                    try:
+                        modelfield = obj.__class__._meta.get_field(field)
+                        setattr(obj, field,
+                                modelfield.clean(modelfield.to_python(value),
+                                                 obj))
+                    except ValidationError:
+                        message = _(u'Correct the mistakes')
+                        return JsonResponse({'status': 'error',
+                                             'type_message': 'error',
+                                             'message': message},
+                                            encoder=LazyEncoder)
+                    except FieldDoesNotExist:
+                        pass
             obj.save()
             message = _(u'Save changes')
             return JsonResponse({'status': 'OK', 'type_message': 'info',
                                  'message': message}, encoder=LazyEncoder)
         else:
-            message = _(u'Missing required data')
+            message = _(u'Bad request')
             return JsonResponse({'status': 'error', 'type_message': 'error',
                                  'message': message}, encoder=LazyEncoder)
 
@@ -168,17 +193,7 @@ class CatalogAdmin(admin.ModelAdmin):
         if nodes_qs.count() == 0:
             return JsonResponse(response)
 
-        fields = []
-        field_names = []
-        for model_cls in get_catalog_models():
-            admin_cls = admin.site._registry[model_cls]
-            for field_name in admin_cls.list_display:
-                if field_name not in field_names and field_name != '__str__':
-                    field_label = unicode(admin.utils.label_for_field(
-                        field_name, model_cls, admin_cls))
-                    fields.append([field_name, field_label])
-                    field_names.append(field_name)
-
+        fields = self.get_display_fields()
         nodes = []
         for item in nodes_qs:
             admin_cls = admin.site._registry[type(item.content_object)]
@@ -198,7 +213,7 @@ class CatalogAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.move_tree_item)),
             url(r'^delete/(\d+)$',
                 self.admin_site.admin_view(self.delete_tree_item)),
-            url(r'^edit/(\d+)$',
+            url(r'^edit/$',
                 self.admin_site.admin_view(self.edit_tree_item)),
             url(r'^list_children/(\d+)$',
                 self.admin_site.admin_view(self.list_children)),

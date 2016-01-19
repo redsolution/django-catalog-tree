@@ -56,9 +56,32 @@ var move_tree_item = function(item_id, target_id, position){
 
 
 var CatalogApp = {};
+var csrftoken = $.cookie('csrftoken');
 
-
-CatalogApp.ItemModel = Backbone.Model.extend({});
+CatalogApp.ItemModel = Backbone.Model.extend({
+    sync: function(method, model, options) {
+        console.log(options);
+        if (method === "update") {
+            options.url = "edit/";
+            options.beforeSend = function(xhr){
+                if (!this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            };
+            return Backbone.sync(method, model, options);
+        }
+    },
+    parse : function(response, xhr) {
+        if (response.status) {
+            this.status = response.status;
+            addMessage(response.type_message, response.message);
+            return {};
+        }
+        else {
+            return response;
+        }
+    }
+});
 
 
 CatalogApp.ItemCollection = Backbone.Collection.extend({
@@ -84,12 +107,16 @@ CatalogApp.ItemCollection = Backbone.Collection.extend({
     }
 });
 
-
 CatalogApp.ListItemsView = Backbone.View.extend({
     el: '#list_items_container',
     tableEl: '#list_table',
     template: 'table_items_tpl',
     inputTemplate: 'input_tpl',
+    cellTemplate: 'cell_tpl',
+    events: {
+        'click .editable': 'active_edit',
+        'click .active-edit .save': 'save'
+    },
     initialize: function(options){
         var self = this;
         if(options.parent_id){
@@ -120,6 +147,54 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         this.collection.changeParentId(options.parent_id);
         return this
     },
+    active_edit: function(event){
+        var target = event.currentTarget;
+        if (!$(target).hasClass('active-edit')) {
+            var value = $.trim($(target).html()),
+                type = $(target).data('type')
+            if (type == 'checkbox') value = $(target).find('img').attr('alt');
+            var html = templateHelper(self.inputTemplate, {value: value, type: type});
+            $(target).html(html);
+            $(target).addClass('active-edit');
+            $(target).find('input').focus().val(value);
+        }
+    },
+    save: function(event){
+        event.stopPropagation();
+        var target = event.currentTarget;
+        var edit_cell = $(target).parent();
+        var item_id = $(target).parents('tr').attr('id'),
+            field = edit_cell.data('name'),
+            value = edit_cell.find('input').val(),
+            type = edit_cell.find('input').attr('type');
+        if (type == 'checkbox') {
+            if (edit_cell.find('input').prop("checked")) {
+                value = 't';
+            }
+            else {
+                value = 'f';
+            }
+        }
+        var item = self.collection.get(item_id),
+            params = {};
+        params[field] = {'editable': true, 'type': edit_cell.find('input').attr('type'), 'value': value};
+        item.save(params,
+            {
+                success: function(model, response, options) {
+                    if (model.status == 'OK') {
+                        edit_cell.removeClass('active-edit error');
+                        var html = templateHelper(self.cellTemplate, {type: type, value: value});
+                        edit_cell.html(html);
+                    }
+                    else {
+                        edit_cell.addClass('error');
+                    }
+                    model.status = '';
+                    $(self.tableEl).trigger("update");
+                },
+            }
+        );
+    },
     initSorter: function(){
         self = this;
         $(document).ready(function(){
@@ -131,59 +206,6 @@ CatalogApp.ListItemsView = Backbone.View.extend({
                     if($(s).find('img').length == 0) return $(s).text();
                     return $(s).find('img').attr('alt');
                 }
-            });
-            self.$el.find('.editable').on('click', function(event){
-                if (!$(this).hasClass('active-edit')) {
-                    var value = $.trim($(this).html()),
-                        type = $(this).data('type')
-                    if (type == 'checkbox') value = $(this).find('img').attr('alt');
-                    var html = templateHelper(self.inputTemplate, {value: value, type: type});
-                    $(this).html(html);
-                    $(this).addClass('active-edit');
-                    $(this).find('input').focus().val(value);
-                }
-            });
-            self.$el.find('.editable').on('click', '.save', function(event){
-                event.stopPropagation();
-                var edit_cell = $(this).parent();
-                var item_id = $(this).parents('tr').attr('id'),
-                    field = edit_cell.data('name'),
-                    value = edit_cell.find('input').val()
-                if (edit_cell.find('input').attr('type') == 'checkbox') {
-                    if (edit_cell.find('input').prop("checked")) {
-                        value = 't';
-                    }
-                    else {
-                        value = 'f';
-                    }
-                }
-                $.ajax({
-                    url: 'edit/' + item_id,
-                    data: {'field': field, 'value': value},
-                    async: false,
-                    success: function(data){
-                        if (data.status === 'OK') {
-                            edit_cell.removeClass('active-edit error');
-                            if (edit_cell.find('input').attr('type') == 'checkbox') {
-                                if (value == 't') {
-                                    edit_cell.html('<img src="/static/admin/img/icon-yes.gif" alt="' + value + '">');
-                                }
-                                else {
-                                    edit_cell.html('<img src="/static/admin/img/icon-no.gif" alt="' + value + '">');
-                                }
-                            }
-                            else {
-                                edit_cell.html(value);
-                            }
-                            addMessage(data.type_message, data.message);
-                        }
-                        else {
-                            edit_cell.addClass('error');
-                            addMessage(data.type_message, data.message);
-                        }
-                        $(self.tableEl).trigger("update");
-                    }
-                });
             });
         });
     }

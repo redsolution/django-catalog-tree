@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-01-15 10:48+0500\n"
+"POT-Creation-Date: 2016-01-19 16:58+0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,37 +19,49 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: admin.py:78
+#: admin.py:97
 #, python-format
 msgid "Add %(model_name)s"
 msgstr "Добавить %(model_name)s"
 
-#: admin.py:102
+#: admin.py:121
 #, python-format
 msgid "Invalid move. Slug %(slug)s exist in this level"
 msgstr ""
 "Ошибка при перемещении объекта. Слаг %(slug)s уже есть на данном уровне "
 "вложенности"
 
-#: admin.py:111
+#: admin.py:130
 msgid "Successful move"
 msgstr "Перемещение выполнено успешно"
 
-#: admin.py:120
+#: admin.py:140 admin.py:181
+msgid "Object does not exist"
+msgstr "Объект не существует"
+
+#: admin.py:156
+msgid "Correct the mistakes"
+msgstr "Исправьте ошибки"
+
+#: admin.py:164
+msgid "Save changes"
+msgstr "Изменения сохранены"
+
+#: admin.py:168
+msgid "Bad request"
+msgstr "Ошибка в запросе"
+
+#: admin.py:176
 #, python-format
 msgid "Deleted object %(object_name)s"
 msgstr "Объект  %(object_name)s удален"
 
-#: admin.py:125
-msgid "Object does not exist"
-msgstr "Объект не существует"
-
-#: admin.py:230
+#: admin.py:267
 #, python-format
 msgid "Slug %(slug)s already exist in this level"
 msgstr "Слаг %(slug)s уже есть на данном уровне вложенности"
 
-#: apps.py:7
+#: apps.py:7 templates/admin/catalog/tree_list.html:78
 msgid "Catalog"
 msgstr "Каталог"
 
@@ -73,11 +85,11 @@ msgstr "Отображать на сайте"
 msgid "Add"
 msgstr "Добавить"
 
-#: templates/admin/catalog/tree_list.html:46
+#: templates/admin/catalog/tree_list.html:48
 msgid "Home"
 msgstr "На главную"
 
-#: templates/admin/catalog/tree_list.html:73
+#: templates/admin/catalog/tree_list.html:75
 msgid "search, (esc) for clear"
 msgstr "Поиск, для отмены нажмите (esc)"
 
