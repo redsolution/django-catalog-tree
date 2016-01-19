@@ -115,7 +115,8 @@ CatalogApp.ListItemsView = Backbone.View.extend({
     cellTemplate: 'cell_tpl',
     events: {
         'click .editable': 'active_edit',
-        'click .active-edit .save': 'save'
+        'click .active-edit .save': 'save_edit',
+        'click .active-edit .cancel': 'cancel_edit',
     },
     initialize: function(options){
         var self = this;
@@ -154,16 +155,27 @@ CatalogApp.ListItemsView = Backbone.View.extend({
                 type = $(target).data('type')
             if (type == 'checkbox') value = $(target).find('img').attr('alt');
             var html = templateHelper(self.inputTemplate, {value: value, type: type});
+            $(target).data('original',value);
             $(target).html(html);
             $(target).addClass('active-edit');
             $(target).find('input').focus().val(value);
         }
     },
-    save: function(event){
+    cancel_edit: function(event){
         event.stopPropagation();
-        var target = event.currentTarget;
-        var edit_cell = $(target).parent();
-        var item_id = $(target).parents('tr').attr('id'),
+        var target = event.currentTarget,
+            edit_cell = $(target).parent(),
+            value = edit_cell.data('original'),
+            type = edit_cell.find('input').attr('type');
+        edit_cell.removeClass('active-edit error');
+        var html = templateHelper(self.cellTemplate, {type: type, value: value});
+        edit_cell.html(html);
+    },
+    save_edit: function(event){
+        event.stopPropagation();
+        var target = event.currentTarget,
+            edit_cell = $(target).parent(),
+            item_id = $(target).parents('tr').attr('id'),
             field = edit_cell.data('name'),
             value = edit_cell.find('input').val(),
             type = edit_cell.find('input').attr('type');
