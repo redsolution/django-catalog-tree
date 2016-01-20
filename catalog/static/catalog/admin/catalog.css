@@ -80,6 +80,14 @@ table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSo
     cursor: pointer;
 }
 
+#list_table td.accept_value {
+    background: #a0db8e;
+}
+
+#list_table td.accept_value.active-edit {
+    background: #fff;
+}
+
 #list_table td input {
     float: left;
 }

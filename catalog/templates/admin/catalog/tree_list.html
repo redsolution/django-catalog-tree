@@ -83,22 +83,6 @@
                     <div id="list_items_container"></div>
                 </div>
             </div>
-            <script type="text/template" id="cell_tpl">
-               <% if(type == 'checkbox'){
-                      if(value == 't') { %>
-                          <img src="{% static 'admin/img/icon-yes.gif' %}" alt="<%= value %>">
-                      <% } else { %>
-                          <img src="{% static 'admin/img/icon-no.gif' %}" alt="<%= value %>">
-                      <% } %>
-               <% } else { %>
-                   <%= value %>
-               <% } %>
-            </script>
-            <script type="text/template" id="input_tpl">
-                <input <% if(type == 'checkbox' && value == 't'){ %>checked="checked"<% } %> type="<%= type %>" value="<%= value %>" >
-                <div class="save">save</div>
-                <div class="cancel">cancel</div>
-            </script>
             <script type="text/template" id="table_items_tpl">
                 <table class="tablesorter" id="list_table"  >
                     <thead>
@@ -106,26 +90,35 @@
                             <% _.each(fields, function(field){ %>
                                 <th><%= field[1] %></th>
                             <% }); %>
+                            <th data-sorter="false"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <% _.each(items, function(item){ %>
-                            <tr id="<%= item.id %>">
-                                <% _.each(fields, function(field){ %>
-                                    <td class="<% if(item[field[0]].editable){ %>editable<% } %>"
-                                        data-type="<%= item[field[0]].type %>"
-                                            data-name="<%= field[0] %>">
-                                        <% var html = templateHelper('cell_tpl', {type: item[field[0]].type, value: item[field[0]].value}); %>
-                                        <%= html %>
-                                    </td>
-
-                                <% }); %>
-                            </tr>
-                        <% }); %>
                     </tbody>
                 </table>
             </script>
-
+            <script type="text/template" id="item_tpl">
+                <td>
+                    <% var html = templateHelper('field_tpl', {field: field}) %>
+                    <%= html %>
+                </td>
+            </script>
+            <script type="text/template" id="field_tpl">
+                <% if(field.type == 'checkbox'){
+                      if(field.value == 't') { %>
+                          <img src="{% static 'admin/img/icon-yes.gif' %}" alt="<%= field.value %>">
+                      <% } else { %>
+                          <img src="{% static 'admin/img/icon-no.gif' %}" alt="<%= field.value %>">
+                      <% } %>
+                <% } else { %>
+                   <%= field.value %>
+                <% } %>
+            </script>
+            <script type="text/template" id="edit_tpl">
+                <input <% if(type == 'checkbox' && value == 't'){ %>checked="checked"<% } %> type="<%= type %>" value="<%= value %>" >
+                <div class="accept">принять</div>
+                <div class="cancel">отменить</div>
+            </script>
         </div>
     </div>
 {% endblock %}

@@ -60,7 +60,6 @@ var csrftoken = $.cookie('csrftoken');
 
 CatalogApp.ItemModel = Backbone.Model.extend({
     sync: function(method, model, options) {
-        console.log(options);
         if (method === "update") {
             options.url = "edit/";
             options.beforeSend = function(xhr){
@@ -83,6 +82,137 @@ CatalogApp.ItemModel = Backbone.Model.extend({
     }
 });
 
+CatalogApp.EditView = Backbone.View.extend({
+    tagName: 'td',
+    className: 'editable',
+    template: 'field_tpl',
+    edit_template: 'edit_tpl',
+    events: {
+        'click': 'active_edit',
+        'click .accept': 'accept_edit',
+        'click .cancel': 'cancel_edit',
+    },
+    initialize: function(options) {
+        if(options.field_name){
+            this.field_name = options.field_name;
+        }
+    },
+    render: function() {
+        this.$el.html(
+            templateHelper(
+                this.template,
+                {field: this.model.get(this.field_name)}
+            )
+        );
+        this.$el.removeClass('active-edit');
+        return this;
+    },
+    renderEdit: function() {
+        this.$el.html(
+            templateHelper(
+                this.edit_template,
+                {type: this.model.get(this.field_name).type,
+                 value: this.model.get(this.field_name).value}
+            )
+        );
+        this.$el.addClass('active-edit');
+        this.$el.find('input').focus().val(this.model.get(this.field_name).value);
+        return this;
+    },
+    close: function() {
+        this.remove();
+        this.unbind();
+    },
+    active_edit: function(event){
+        if (!this.$el.hasClass('active-edit')) {
+            this.renderEdit();
+        }
+    },
+    cancel_edit: function(event){
+        event.stopPropagation();
+        this.render();
+    },
+    accept_edit: function(event){
+        event.stopPropagation();
+        var new_value;
+        if (this.model.get(this.field_name).type == 'checkbox') {
+            if (this.$el.find('input').prop("checked")) new_value = 't';
+            else new_value = 'f';
+        } else {
+            new_value = this.$el.find('input').val();
+        }
+        if (this.model.get(this.field_name).value != new_value) {
+            this.model.set(this.field_name, {'editable': true, 'type': this.model.get(this.field_name).type, 'value': new_value});
+            this.$el.addClass('accept_value');
+        }
+        this.render();
+    }
+});
+
+CatalogApp.ItemView = Backbone.View.extend({
+    tagName: 'tr',
+    template: 'item_tpl',
+    events: {
+        'click .save_item': 'save',
+    },
+    initialize: function(options){
+        if(options.fields && options.list_view){
+            this.fields = options.fields;
+            this.list_view = options.list_view;
+        }
+        this.child_views = [];
+    },
+    render: function () {
+        this.$el.empty();
+        this.fields.forEach(function(field){
+            this.renderField(field[0]);
+        }, this);
+        this.$el.append('<td><a class="save_item">Сохранить</a></td>')
+        return this;
+    },
+    renderField: function(field_name) {
+        var field = this.model.get(field_name)
+        if (field.editable) {
+            var editview = new CatalogApp.EditView({
+                model: this.model,
+                field_name: field_name
+            });
+            this.$el.append(editview.render().el);
+        }
+        else {
+            this.$el.append(
+                templateHelper(
+                    this.template,
+                    {field: field}
+                )
+            );
+        }
+    },
+    close: function() {
+        this.remove();
+        this.unbind();
+        _.each(this.child_views, function(child_view){
+            if (child_view.close){
+                child_view.close();
+            }
+        });
+    },
+    save: function(event) {
+        var self = this;
+        this.model.save({},
+            {
+                success: function(model, response, options){
+                    console.log(model);
+                    if (model.status === 'OK') {
+                        model.status = '';
+                        self.render();
+                        $(self.list_view.tableEl).trigger('update');
+                    }
+                }
+            }
+        );
+    }
+});
 
 CatalogApp.ItemCollection = Backbone.Collection.extend({
     model: CatalogApp.ItemModel,
@@ -110,14 +240,8 @@ CatalogApp.ItemCollection = Backbone.Collection.extend({
 CatalogApp.ListItemsView = Backbone.View.extend({
     el: '#list_items_container',
     tableEl: '#list_table',
+    tbodyEl: '#list_table tbody',
     template: 'table_items_tpl',
-    inputTemplate: 'input_tpl',
-    cellTemplate: 'cell_tpl',
-    events: {
-        'click .editable': 'active_edit',
-        'click .active-edit .save': 'save_edit',
-        'click .active-edit .cancel': 'cancel_edit',
-    },
     initialize: function(options){
         var self = this;
         if(options.parent_id){
@@ -129,83 +253,46 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         this.collection = new CatalogApp.ItemCollection({
             parent_id: this.parent_id
         });
-
+        this.child_views = [];
         this.listenTo(this.collection, 'reset', this.render);
         this.listenTo(this, 'afterRender', this.initSorter);
     },
     render: function(){
-        $(this.tableEl).trigger("destroy");
+        this.item_views = [];
         this.$el.html(
             templateHelper(
                 this.template,
-                {fields: this.collection.fields, items: this.collection.toJSON()}
+                {fields: this.collection.fields}
             )
         );
+        this.collection.each(function( item ){
+            this.renderItem( item );
+        }, this);
         this.trigger('afterRender');
         return this
     },
+    renderItem: function(item) {
+        var itemview = new CatalogApp.ItemView({
+            model: item,
+            list_view: this,
+            fields: this.collection.fields
+        });
+        $(this.tbodyEl).append(itemview.render().el);
+        this.child_views.push(itemview);
+    },
     reRender: function(options){
+        $(this.tableEl).trigger("destroy");
+        this.close_child_views();
+        this.item_views.forEach(function(view){
+            console.log(view.remove());
+        });
         this.collection.changeParentId(options.parent_id);
         return this
     },
-    active_edit: function(event){
-        var target = event.currentTarget;
-        if (!$(target).hasClass('active-edit')) {
-            var value = $.trim($(target).html()),
-                type = $(target).data('type')
-            if (type == 'checkbox') value = $(target).find('img').attr('alt');
-            var html = templateHelper(self.inputTemplate, {value: value, type: type});
-            $(target).data('original',value);
-            $(target).html(html);
-            $(target).addClass('active-edit');
-            $(target).find('input').focus().val(value);
-        }
-    },
-    cancel_edit: function(event){
-        event.stopPropagation();
-        var target = event.currentTarget,
-            edit_cell = $(target).parent(),
-            value = edit_cell.data('original'),
-            type = edit_cell.find('input').attr('type');
-        edit_cell.removeClass('active-edit error');
-        var html = templateHelper(self.cellTemplate, {type: type, value: value});
-        edit_cell.html(html);
-    },
-    save_edit: function(event){
-        event.stopPropagation();
-        var target = event.currentTarget,
-            edit_cell = $(target).parent(),
-            item_id = $(target).parents('tr').attr('id'),
-            field = edit_cell.data('name'),
-            value = edit_cell.find('input').val(),
-            type = edit_cell.find('input').attr('type');
-        if (type == 'checkbox') {
-            if (edit_cell.find('input').prop("checked")) {
-                value = 't';
-            }
-            else {
-                value = 'f';
-            }
-        }
-        var item = self.collection.get(item_id),
-            params = {};
-        params[field] = {'editable': true, 'type': edit_cell.find('input').attr('type'), 'value': value};
-        item.save(params,
-            {
-                success: function(model, response, options) {
-                    if (model.status == 'OK') {
-                        edit_cell.removeClass('active-edit error');
-                        var html = templateHelper(self.cellTemplate, {type: type, value: value});
-                        edit_cell.html(html);
-                    }
-                    else {
-                        edit_cell.addClass('error');
-                    }
-                    model.status = '';
-                    $(self.tableEl).trigger("update");
-                },
-            }
-        );
+    close_child_views: function() {
+        _.each(this.child_views, function(child_view){
+            if (child_view.close) child_view.close();
+        });
     },
     initSorter: function(){
         self = this;
