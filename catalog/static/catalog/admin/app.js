@@ -79,6 +79,9 @@ CatalogApp.ItemModel = Backbone.Model.extend({
         else {
             return response;
         }
+    },
+    destroy: function() {
+        this.trigger('destroy', this);
     }
 });
 
@@ -121,6 +124,7 @@ CatalogApp.EditView = Backbone.View.extend({
     close: function() {
         this.remove();
         this.unbind();
+        this.undelegateEvents();
     },
     show_error: function() {
         this.$el.addClass("error");
@@ -193,8 +197,12 @@ CatalogApp.ItemView = Backbone.View.extend({
         }
     },
     close: function() {
+        this.removeChilds();
         this.remove();
         this.unbind();
+        this.undelegateEvents();
+    },
+    removeChilds: function() {
         _.each(this.child_views, function(child_view){
             if (child_view.close){
                 child_view.close();
@@ -208,6 +216,7 @@ CatalogApp.ItemView = Backbone.View.extend({
             {
                 success: function(model, response, options){
                     if (model.response.status === 'OK') {
+                        self.removeChilds();
                         self.render();
                         self.tableEl.trigger('update');
                     }
@@ -292,12 +301,19 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         this.child_views.push(itemview);
     },
     reRender: function(options){
-        $(this.tableEl).trigger("destroy");
-        this.reset();
+        this.destroy();
         this.collection.changeParentId(options.parent_id);
         return this
     },
-    reset: function() {
+    destroy: function() {
+        $(this.tableEl).trigger("destroy");
+        this.$el.empty();
+        this.removeChilds();
+    },
+    removeChilds: function() {
+        this.collection.each(function( item ){
+            item.destroy();
+        }, this);
         _.each(this.child_views, function(child_view){
             if (child_view.close) child_view.close();
         });
@@ -325,8 +341,8 @@ CatalogApp.TreeView = Backbone.View.extend({
     searchId: '#tree_search',
     template: 'tree_tpl',
     initialize: function(options){
-        var self = this;
 
+        var self = this;
         this.render();
 
         if(Modernizr.localstorage){
@@ -360,13 +376,14 @@ CatalogApp.TreeView = Backbone.View.extend({
     },
     resizeColumns: function(el, width){
         var parent_width = $(el).parent().outerWidth();
+        var scroll = 16;
         if(width){
             var width = parseInt(width)
             $(el).width(width);
-            $('#right-col').width(parent_width - parseInt(width)-4);
+            $('#right-col').width(parent_width - parseInt(width)-scroll);
         } else {
             var left_width = $(el).outerWidth();
-            $('#right-col').width(parent_width - left_width-2);
+            $('#right-col').width(parent_width - left_width-scroll);
         }
     },
     initJsTree: function(){
