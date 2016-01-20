@@ -8,7 +8,7 @@ from django.utils.encoding import smart_unicode
 class GridRow(object):
 
     types = {
-        int: 'number',
+        int: 'text',
         unicode: 'text',
         str: 'text',
         bool: 'checkbox'

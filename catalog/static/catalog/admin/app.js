@@ -72,7 +72,7 @@ CatalogApp.ItemModel = Backbone.Model.extend({
     },
     parse : function(response, xhr) {
         if (response.status) {
-            this.status = response.status;
+            this.response = response;
             addMessage(response.type_message, response.message);
             return {};
         }
@@ -91,6 +91,7 @@ CatalogApp.EditView = Backbone.View.extend({
         'click': 'active_edit',
         'click .accept': 'accept_edit',
         'click .cancel': 'cancel_edit',
+        'click input': function(event){ event.stopPropagation(); }
     },
     initialize: function(options) {
         if(options.field_name){
@@ -104,7 +105,6 @@ CatalogApp.EditView = Backbone.View.extend({
                 {field: this.model.get(this.field_name)}
             )
         );
-        this.$el.removeClass('active-edit');
         return this;
     },
     renderEdit: function() {
@@ -115,7 +115,6 @@ CatalogApp.EditView = Backbone.View.extend({
                  value: this.model.get(this.field_name).value}
             )
         );
-        this.$el.addClass('active-edit');
         this.$el.find('input').focus().val(this.model.get(this.field_name).value);
         return this;
     },
@@ -123,10 +122,12 @@ CatalogApp.EditView = Backbone.View.extend({
         this.remove();
         this.unbind();
     },
+    show_error: function() {
+        this.$el.addClass("error");
+    },
     active_edit: function(event){
-        if (!this.$el.hasClass('active-edit')) {
-            this.renderEdit();
-        }
+        event.stopPropagation();
+        this.renderEdit();
     },
     cancel_edit: function(event){
         event.stopPropagation();
@@ -143,6 +144,7 @@ CatalogApp.EditView = Backbone.View.extend({
         }
         if (this.model.get(this.field_name).value != new_value) {
             this.model.set(this.field_name, {'editable': true, 'type': this.model.get(this.field_name).type, 'value': new_value});
+            this.$el.removeClass('error');
             this.$el.addClass('accept_value');
         }
         this.render();
@@ -156,17 +158,18 @@ CatalogApp.ItemView = Backbone.View.extend({
         'click .save_item': 'save',
     },
     initialize: function(options){
-        if(options.fields && options.list_view){
+        if(options.fields && options.tableEl){
             this.fields = options.fields;
-            this.list_view = options.list_view;
+            this.tableEl = options.tableEl;
         }
         this.child_views = [];
     },
     render: function () {
         this.$el.empty();
-        this.fields.forEach(function(field){
-            this.renderField(field[0]);
-        }, this);
+        var self = this;
+        _.each(this.fields, function(field){
+            self.renderField(field[0]);
+        });
         this.$el.append('<td><a class="save_item">Сохранить</a></td>')
         return this;
     },
@@ -178,6 +181,7 @@ CatalogApp.ItemView = Backbone.View.extend({
                 field_name: field_name
             });
             this.$el.append(editview.render().el);
+            this.child_views.push(editview);
         }
         else {
             this.$el.append(
@@ -196,18 +200,26 @@ CatalogApp.ItemView = Backbone.View.extend({
                 child_view.close();
             }
         });
+        this.child_views = [];
     },
     save: function(event) {
         var self = this;
         this.model.save({},
             {
                 success: function(model, response, options){
-                    console.log(model);
-                    if (model.status === 'OK') {
-                        model.status = '';
+                    if (model.response.status === 'OK') {
                         self.render();
-                        $(self.list_view.tableEl).trigger('update');
+                        self.tableEl.trigger('update');
                     }
+                    else {
+                        _.each(self.child_views, function(child_view){
+                            if (child_view.field_name in model.response.errors){
+                                child_view.show_error();
+                                child_view.renderEdit();
+                            }
+                        });
+                    }
+                    model.response = {};
                 }
             }
         );
@@ -258,7 +270,6 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         this.listenTo(this, 'afterRender', this.initSorter);
     },
     render: function(){
-        this.item_views = [];
         this.$el.html(
             templateHelper(
                 this.template,
@@ -274,7 +285,7 @@ CatalogApp.ListItemsView = Backbone.View.extend({
     renderItem: function(item) {
         var itemview = new CatalogApp.ItemView({
             model: item,
-            list_view: this,
+            tableEl: $(this.tableEl),
             fields: this.collection.fields
         });
         $(this.tbodyEl).append(itemview.render().el);
@@ -282,17 +293,15 @@ CatalogApp.ListItemsView = Backbone.View.extend({
     },
     reRender: function(options){
         $(this.tableEl).trigger("destroy");
-        this.close_child_views();
-        this.item_views.forEach(function(view){
-            console.log(view.remove());
-        });
+        this.reset();
         this.collection.changeParentId(options.parent_id);
         return this
     },
-    close_child_views: function() {
+    reset: function() {
         _.each(this.child_views, function(child_view){
             if (child_view.close) child_view.close();
         });
+        this.child_views = [];
     },
     initSorter: function(){
         self = this;

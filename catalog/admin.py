@@ -144,6 +144,7 @@ class CatalogAdmin(admin.ModelAdmin):
                                     encoder=LazyEncoder,)
 
             obj = treeitem.content_object
+            errors = {}
             for field in data:
                 if field != 'id':
                     value = data[field]['value']
@@ -153,13 +154,16 @@ class CatalogAdmin(admin.ModelAdmin):
                                 modelfield.clean(modelfield.to_python(value),
                                                  obj))
                     except ValidationError:
-                        message = _(u'Correct the mistakes')
-                        return JsonResponse({'status': 'error',
-                                             'type_message': 'error',
-                                             'message': message},
-                                            encoder=LazyEncoder)
+                        errors[field] = value
                     except FieldDoesNotExist:
                         pass
+            if errors:
+                message = _(u'Correct the mistakes')
+                return JsonResponse({'errors': errors,
+                                     'status': 'error',
+                                     'type_message': 'error',
+                                     'message': message},
+                                    encoder=LazyEncoder)
             obj.save()
             message = _(u'Save changes')
             return JsonResponse({'status': 'OK', 'type_message': 'info',
