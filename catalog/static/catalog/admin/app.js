@@ -22,7 +22,14 @@ function addMessage(type, text) {
 var delete_tree_item = function(node, tree){
     var item_id = node.id
     $.ajax({
-        url: 'delete/' + item_id,
+        url: 'delete/',
+        method: "POST",
+        data: {'item_id': item_id},
+        beforeSend: function(xhr) {
+            if (!this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        },
         success: function(data) {
             if (data.status === 'OK') {
                 tree.delete_node(node);
@@ -35,11 +42,14 @@ var delete_tree_item = function(node, tree){
 var move_tree_item = function(item_id, target_id, position){
     var moving = false;
     $.ajax({
-        url: 'move/' + item_id,
-        data: {'position': position, 'target_id': target_id},
+        url: 'move/',
+        method: "POST",
+        data: {'item_id': item_id, 'position': position, 'target_id': target_id},
         async: false,
-        beforeSend: function() {
-            $('#overlay').fadeIn();
+        beforeSend: function(xhr) {
+            if (!this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
         },
         success: function(data){
             if (data.status === 'OK') {
@@ -50,7 +60,6 @@ var move_tree_item = function(item_id, target_id, position){
                 moving = false;
                 addMessage(data.type_message, data.message);
             }
-            $('#overlay').fadeOut();
         }
     });
     return moving;

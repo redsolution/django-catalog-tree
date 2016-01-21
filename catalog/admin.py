@@ -107,28 +107,33 @@ class CatalogAdmin(admin.ModelAdmin):
             tree.append(self.get_node_data(treeitem))
         return JsonResponse(tree, safe=False, encoder=LazyEncoder)
 
-    def move_tree_item(self, request, item_id):
-        position = request.GET.get('position', None)
-        target_id = request.GET.get('target_id', None)
+    def move_tree_item(self, request):
+        if request.method == "POST":
+            position = request.POST.get('position', None)
+            target_id = request.POST.get('target_id', None)
+            item_id = request.POST.get('item_id', None)
 
-        if position and target_id:
-            node = get_object_or_404(TreeItem, id=item_id)
-            target = get_object_or_404(TreeItem, id=target_id)
-            slug = node.get_slug()
-            if slug is not None and \
-                    not TreeItem.check_slug(target, position, node.get_slug(),
-                                            node=node):
-                message = _(u'Invalid move. Slug %(slug)s exist in '
-                            u'this level') % {'slug': node.get_slug()}
-                return JsonResponse({
-                                    'status': 'error',
-                                    'type_message': 'error',
-                                    'message': message
-                                    },
-                                    encoder=LazyEncoder)
-            node.move_to(target, position)
-        message = _(u'Successful move')
-        return JsonResponse({'status': 'OK', 'type_message': 'info',
+            if item_id and position and target_id:
+                node = get_object_or_404(TreeItem, id=item_id)
+                target = get_object_or_404(TreeItem, id=target_id)
+                slug = node.get_slug()
+                if slug is not None and \
+                        not TreeItem.check_slug(target, position,
+                                                node.get_slug(), node=node):
+                    message = _(u'Invalid move. Slug %(slug)s exist in '
+                                u'this level') % {'slug': node.get_slug()}
+                    return JsonResponse({
+                                        'status': 'error',
+                                        'type_message': 'error',
+                                        'message': message
+                                        },
+                                        encoder=LazyEncoder)
+                node.move_to(target, position)
+                message = _(u'Successful move')
+                return JsonResponse({'status': 'OK', 'type_message': 'info',
+                                     'message': message}, encoder=LazyEncoder)
+        message = _(u'Bad request')
+        return JsonResponse({'status': 'error', 'type_message': 'error',
                              'message': message}, encoder=LazyEncoder)
 
     def edit_tree_item(self, request):
@@ -173,18 +178,24 @@ class CatalogAdmin(admin.ModelAdmin):
             return JsonResponse({'status': 'error', 'type_message': 'error',
                                  'message': message}, encoder=LazyEncoder)
 
-    def delete_tree_item(self, request, item_id):
-        try:
-            treeitem = TreeItem.objects.get(id=item_id)
-            treeitem.delete()
-            message = _(u'Deleted object %(object_name)s') % \
-                      {'object_name': treeitem.__unicode__()}
-            return JsonResponse({'status': 'OK', 'type_message': 'info',
-                                 'message': message}, encoder=LazyEncoder)
-        except TreeItem.DoesNotExist:
-            message = _(u'Object does not exist')
-            return JsonResponse({'status': 'error', 'type_message': 'error',
-                                 'message': message}, encoder=LazyEncoder)
+    def delete_tree_item(self, request):
+        if request.method == "POST":
+            item_id = request.POST.get('item_id', None)
+            try:
+                treeitem = TreeItem.objects.get(id=item_id)
+                treeitem.delete()
+                message = _(u'Deleted object %(object_name)s') % \
+                          {'object_name': treeitem.__unicode__()}
+                return JsonResponse({'status': 'OK', 'type_message': 'info',
+                                     'message': message}, encoder=LazyEncoder)
+            except TreeItem.DoesNotExist:
+                message = _(u'Object does not exist')
+                return JsonResponse({'status': 'error',
+                                     'type_message': 'error',
+                                     'message': message}, encoder=LazyEncoder)
+        message = _(u'Bad request')
+        return JsonResponse({'status': 'error', 'type_message': 'error',
+                             'message': message}, encoder=LazyEncoder)
 
     def list_children(self, request, parent_id=None):
 
@@ -213,9 +224,8 @@ class CatalogAdmin(admin.ModelAdmin):
     def get_urls(self):
         return patterns('',
             url(r'^tree/$', self.admin_site.admin_view(self.json_tree)),
-            url(r'^move/(\d+)$',
-                self.admin_site.admin_view(self.move_tree_item)),
-            url(r'^delete/(\d+)$',
+            url(r'^move/$', self.admin_site.admin_view(self.move_tree_item)),
+            url(r'^delete/$',
                 self.admin_site.admin_view(self.delete_tree_item)),
             url(r'^edit/$',
                 self.admin_site.admin_view(self.edit_tree_item)),
