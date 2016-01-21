@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-01-19 16:58+0500\n"
+"POT-Creation-Date: 2016-01-21 10:45+0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -35,28 +35,28 @@ msgstr ""
 msgid "Successful move"
 msgstr "Перемещение выполнено успешно"
 
-#: admin.py:140 admin.py:181
+#: admin.py:140 admin.py:185
 msgid "Object does not exist"
 msgstr "Объект не существует"
 
-#: admin.py:156
+#: admin.py:161
 msgid "Correct the mistakes"
 msgstr "Исправьте ошибки"
 
-#: admin.py:164
+#: admin.py:168
 msgid "Save changes"
 msgstr "Изменения сохранены"
 
-#: admin.py:168
+#: admin.py:172
 msgid "Bad request"
 msgstr "Ошибка в запросе"
 
-#: admin.py:176
+#: admin.py:180
 #, python-format
 msgid "Deleted object %(object_name)s"
 msgstr "Объект  %(object_name)s удален"
 
-#: admin.py:267
+#: admin.py:271
 #, python-format
 msgid "Slug %(slug)s already exist in this level"
 msgstr "Слаг %(slug)s уже есть на данном уровне вложенности"
@@ -92,6 +92,14 @@ msgstr "На главную"
 #: templates/admin/catalog/tree_list.html:75
 msgid "search, (esc) for clear"
 msgstr "Поиск, для отмены нажмите (esc)"
+
+#: templates/admin/catalog/tree_list.html:107
+msgid "Save"
+msgstr "Сохранить"
+
+#: templates/admin/catalog/tree_list.html:123
+msgid "Cancel"
+msgstr "Отмена"
 
 #: templates/catalog/children_tag.html:6
 msgid "No children"

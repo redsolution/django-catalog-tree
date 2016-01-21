@@ -103,6 +103,9 @@
                     <%= html %>
                 </td>
             </script>
+            <script type="text/template" id="save_tpl">
+                <td class="save"><div>{% trans 'Save' %}</div></td>
+            </script>
             <script type="text/template" id="field_tpl">
                 <% if(field.type == 'checkbox'){
                       if(field.value == 't') { %>
@@ -116,8 +119,8 @@
             </script>
             <script type="text/template" id="edit_tpl">
                 <input <% if(type == 'checkbox' && value == 't'){ %>checked="checked"<% } %> type="<%= type %>" value="<%= value %>" >
-                <div class="accept">принять</div>
-                <div class="cancel">отменить</div>
+                <div class="accept">OK</div>
+                <div class="cancel">{% trans 'Cancel' %}</div>
             </script>
         </div>
     </div>

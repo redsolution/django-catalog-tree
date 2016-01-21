@@ -5,6 +5,8 @@ var templateHelper = function(templateName, data){
     return _.template($('#'+templateName).html(), data)
 }
 
+var csrftoken = $.cookie('csrftoken');
+
 function addMessage(type, text) {
     var message = $('<li class="' + type + '">' + text + '</li>').hide();
     $(".messagelist").append(message);
@@ -56,7 +58,6 @@ var move_tree_item = function(item_id, target_id, position){
 
 
 var CatalogApp = {};
-var csrftoken = $.cookie('csrftoken');
 
 CatalogApp.ItemModel = Backbone.Model.extend({
     sync: function(method, model, options) {
@@ -91,9 +92,9 @@ CatalogApp.EditView = Backbone.View.extend({
     template: 'field_tpl',
     edit_template: 'edit_tpl',
     events: {
-        'click': 'active_edit',
-        'click .accept': 'accept_edit',
-        'click .cancel': 'cancel_edit',
+        'click': 'activeEdit',
+        'click .accept': 'acceptEdit',
+        'click .cancel': 'cancelEdit',
         'click input': function(event){ event.stopPropagation(); }
     },
     initialize: function(options) {
@@ -126,18 +127,18 @@ CatalogApp.EditView = Backbone.View.extend({
         this.unbind();
         this.undelegateEvents();
     },
-    show_error: function() {
+    showError: function() {
         this.$el.addClass("error");
     },
-    active_edit: function(event){
+    activeEdit: function(event){
         event.stopPropagation();
         this.renderEdit();
     },
-    cancel_edit: function(event){
+    cancelEdit: function(event){
         event.stopPropagation();
         this.render();
     },
-    accept_edit: function(event){
+    acceptEdit: function(event){
         event.stopPropagation();
         var new_value;
         if (this.model.get(this.field_name).type == 'checkbox') {
@@ -158,8 +159,9 @@ CatalogApp.EditView = Backbone.View.extend({
 CatalogApp.ItemView = Backbone.View.extend({
     tagName: 'tr',
     template: 'item_tpl',
+    saveTemplate: 'save_tpl',
     events: {
-        'click .save_item': 'save',
+        'click .save': 'save',
     },
     initialize: function(options){
         if(options.fields && options.tableEl){
@@ -174,7 +176,7 @@ CatalogApp.ItemView = Backbone.View.extend({
         _.each(this.fields, function(field){
             self.renderField(field[0]);
         });
-        this.$el.append('<td><a class="save_item">Сохранить</a></td>')
+        this.$el.append(templateHelper(this.saveTemplate));
         return this;
     },
     renderField: function(field_name) {
@@ -223,7 +225,7 @@ CatalogApp.ItemView = Backbone.View.extend({
                     else {
                         _.each(self.child_views, function(child_view){
                             if (child_view.field_name in model.response.errors){
-                                child_view.show_error();
+                                child_view.showError();
                                 child_view.renderEdit();
                             }
                         });
@@ -338,6 +340,7 @@ CatalogApp.ListItemsView = Backbone.View.extend({
 
 CatalogApp.TreeView = Backbone.View.extend({
     el: '#tree_container',
+    rootEl: '#catalog-root-btn',
     searchId: '#tree_search',
     template: 'tree_tpl',
     initialize: function(options){
@@ -349,15 +352,15 @@ CatalogApp.TreeView = Backbone.View.extend({
             this.resizeColumns($('#left-col'), localStorage['resize_width']);
         }
 
-        $("#catalog-root-btn").click(function(event){
-            $(".jstree-clicked").removeClass("jstree-clicked");
-            self.renderListItemsView();
+        $(this.rootEl).click(function(event){
+            self.selectRoot();
         });
 
         $(window).resize(function(event){
             self.resizeColumns($("#left-col"));
 
         });
+
         $("#left-col").resizable({
             handles: 'e',
             resize: function(e, ui){
@@ -458,6 +461,13 @@ CatalogApp.TreeView = Backbone.View.extend({
             if(data.node.children.length > 0){
                 self.renderListItemsView(data.node.id);
             }
+            $(self.rootEl).removeClass('active');
+        });
+
+        this.$el.on('ready.jstree', function(e, data){
+            if (data.instance.get_selected().length == 0) {
+                self.selectRoot();
+            }
         });
 
         // search
@@ -477,6 +487,11 @@ CatalogApp.TreeView = Backbone.View.extend({
         });
 
         return this;
+    },
+    selectRoot: function() {
+        this.$el.jstree().deselect_all();
+        $(this.rootEl).addClass('active');
+        this.renderListItemsView();
     },
     addTreeItem: function(url) {
         var win = window.open(url + '&_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");

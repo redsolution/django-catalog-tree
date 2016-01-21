@@ -52,7 +52,17 @@
     font-size: 13px;
     cursor: pointer;
     height: 24px;
-    width: 75px;
+    width: 77px;
+    border-radius: 2px;
+}
+
+#catalog-root-btn:hover {
+    background: #e7f4f9;
+}
+
+#catalog-root-btn.active {
+    background: #79aec8;
+    color: #fff;
 }
 
 .catalog #tree_container {
@@ -76,8 +86,41 @@ table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSo
     color: #fff;
 }
 
+#list_table td {
+    vertical-align: middle;
+}
+
 #list_table td.editable {
     cursor: pointer;
+}
+
+#list_table td.editable .accept,
+#list_table td.editable .cancel {
+    margin-left: 10px;
+    display: inline-block;
+    border-radius: 2px;
+    padding: 5px;
+    color: #fff;
+}
+
+#list_table td.editable .accept {
+    background: #a0db8e;
+}
+
+#list_table .save {
+    text-align: center;
+    cursor: pointer;
+}
+
+#list_table .save div {
+    border-radius: 2px;
+    padding: 5px;
+    color: #fff;
+    background: #a0db8e;
+}
+
+#list_table td.editable .cancel {
+    background: #ff2b19;
 }
 
 #list_table td.accept_value {
