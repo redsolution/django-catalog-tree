@@ -24,9 +24,11 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="{% static 'catalog/admin/jquery-ui/jquery-ui.min.js' %}"></script>
     <script src="{% static 'catalog/admin/underscore.min.js' %}"></script>
+    <script src="{% static 'catalog/admin/jquery.cookie.js' %}"></script>
     <script src="{% static 'catalog/admin/backbone.js' %}"></script>
     <script src="{% static 'catalog/admin/jstree/jstree.min.js' %}"></script>
     <script src="{% static 'catalog/admin/tablesorter/jquery.tablesorter.js' %}"></script>
+    <script src="{% static 'catalog/admin/tablesorter/jquery.tablesorter.widgets.js' %}"></script>
     <script src="{% static 'catalog/admin/modernizr.localstorage.min.js' %}"></script>
     <script src="{% static 'catalog/admin/app.js' %}"></script>
     <script>
@@ -81,7 +83,6 @@
                     <div id="list_items_container"></div>
                 </div>
             </div>
-
             <script type="text/template" id="table_items_tpl">
                 <table class="tablesorter" id="list_table"  >
                     <thead>
@@ -89,20 +90,50 @@
                             <% _.each(fields, function(field){ %>
                                 <th><%= field[1] %></th>
                             <% }); %>
+                            <th data-sorter="false"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <% _.each(items, function(item){ %>
-                            <tr>
-                                <% _.each(fields, function(field){ %>
-                                    <td><%= item[field[0]] %></td>
-                                <% }); %>
-                            </tr>
-                        <% }); %>
                     </tbody>
                 </table>
             </script>
-
+            <script type="text/template" id="item_tpl">
+                <td>
+                    <% var html = templateHelper('field_tpl', {field: field}) %>
+                    <%= html %>
+                </td>
+            </script>
+            <script type="text/template" id="save_tpl">
+                <td class="save"><div>{% trans 'Save' %}</div></td>
+            </script>
+            <script type="text/template" id="field_tpl">
+                <% if(field.type == 'checkbox'){
+                      if(field.value == 't') { %>
+                          <img src="{% static 'admin/img/icon-yes.gif' %}" alt="<%= field.value %>">
+                      <% } else { %>
+                          <img src="{% static 'admin/img/icon-no.gif' %}" alt="<%= field.value %>">
+                      <% } %>
+                <% } else if (field.type == 'select'){ %>
+                    <%= field.correct_values[field.value] %>
+                <% } else { %>
+                   <%= field.value %>
+                <% } %>
+            </script>
+            <script type="text/template" id="edit_tpl">
+                <% if(type == 'checkbox'){ %>
+                    <input <% if(value == 't'){ %>checked="checked"<% } %> type="checkbox" >
+                <% } else if (type == 'select'){ %>
+                    <select>
+                        <% _.each(correct_values, function(val, key){ %>
+                            <option <% if(key == value){ %>selected <% } %> value="<%= key %>"><%= val %></option>
+                        <% }); %>
+                    </select>
+                <% } else { %>
+                    <input type="text">
+                <% } %>
+                <div class="accept">OK</div>
+                <div class="cancel">{% trans 'Cancel' %}</div>
+            </script>
         </div>
     </div>
 {% endblock %}

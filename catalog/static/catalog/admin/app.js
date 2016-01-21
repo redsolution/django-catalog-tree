@@ -5,6 +5,8 @@ var templateHelper = function(templateName, data){
     return _.template($('#'+templateName).html(), data)
 }
 
+var csrftoken = $.cookie('csrftoken');
+
 function addMessage(type, text) {
     var message = $('<li class="' + type + '">' + text + '</li>').hide();
     $(".messagelist").append(message);
@@ -20,7 +22,14 @@ function addMessage(type, text) {
 var delete_tree_item = function(node, tree){
     var item_id = node.id
     $.ajax({
-        url: 'delete/' + item_id,
+        url: 'delete/',
+        method: "POST",
+        data: {'item_id': item_id},
+        beforeSend: function(xhr) {
+            if (!this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        },
         success: function(data) {
             if (data.status === 'OK') {
                 tree.delete_node(node);
@@ -33,11 +42,14 @@ var delete_tree_item = function(node, tree){
 var move_tree_item = function(item_id, target_id, position){
     var moving = false;
     $.ajax({
-        url: 'move/' + item_id,
-        data: {'position': position, 'target_id': target_id},
+        url: 'move/',
+        method: "POST",
+        data: {'item_id': item_id, 'position': position, 'target_id': target_id},
         async: false,
-        beforeSend: function() {
-            $('#overlay').fadeIn();
+        beforeSend: function(xhr) {
+            if (!this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
         },
         success: function(data){
             if (data.status === 'OK') {
@@ -48,7 +60,6 @@ var move_tree_item = function(item_id, target_id, position){
                 moving = false;
                 addMessage(data.type_message, data.message);
             }
-            $('#overlay').fadeOut();
         }
     });
     return moving;
@@ -57,9 +68,186 @@ var move_tree_item = function(item_id, target_id, position){
 
 var CatalogApp = {};
 
+CatalogApp.ItemModel = Backbone.Model.extend({
+    sync: function(method, model, options) {
+        if (method === "update") {
+            options.url = "edit/";
+            options.beforeSend = function(xhr){
+                if (!this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            };
+            return Backbone.sync(method, model, options);
+        }
+    },
+    parse : function(response, xhr) {
+        if (response.status) {
+            this.response = response;
+            addMessage(response.type_message, response.message);
+            return {};
+        }
+        else {
+            return response;
+        }
+    },
+    destroy: function() {
+       this.trigger('destroy', this);
+    }
+});
 
-CatalogApp.ItemModel = Backbone.Model.extend({});
+CatalogApp.EditView = Backbone.View.extend({
+    tagName: 'td',
+    className: 'editable',
+    template: 'field_tpl',
+    edit_template: 'edit_tpl',
+    events: {
+        'click': 'activeEdit',
+        'click .accept': 'acceptEdit',
+        'click .cancel': 'cancelEdit',
+        'click input, select': function(event){ event.stopPropagation(); }
+    },
+    initialize: function(options) {
+        if(options.field_name){
+            this.field_name = options.field_name;
+        }
+    },
+    render: function() {
+        this.$el.html(
+            templateHelper(
+                this.template,
+                {field: this.model.get(this.field_name)}
+            )
+        );
+        return this;
+    },
+    renderEdit: function() {
+        this.$el.html(
+            templateHelper(
+                this.edit_template,
+                {type: this.model.get(this.field_name).type,
+                 value: this.model.get(this.field_name).value,
+                 correct_values: this.model.get(this.field_name).correct_values}
+            )
+        );
+        this.$el.find('input').focus().val(this.model.get(this.field_name).value);
+        return this;
+    },
+    close: function() {
+        this.remove();
+        this.unbind();
+        this.undelegateEvents();
+    },
+    showError: function() {
+        this.$el.addClass("error");
+    },
+    activeEdit: function(event){
+        event.stopPropagation();
+        this.renderEdit();
+    },
+    cancelEdit: function(event){
+        event.stopPropagation();
+        this.render();
+    },
+    acceptEdit: function(event){
+        event.stopPropagation();
+        var new_value;
+        if (this.model.get(this.field_name).type == 'checkbox') {
+            if (this.$el.find('input').prop("checked")) new_value = 't';
+            else new_value = 'f';
+        } else if (this.model.get(this.field_name).type == 'select'){
+            new_value = this.$el.find('select option:selected').val();
+        } else {
+            new_value = this.$el.find('input').val();
+        }
+        if (this.model.get(this.field_name).value != new_value) {
+            this.model.set(this.field_name, {'editable': true, 'type': this.model.get(this.field_name).type, 'value': new_value, 'correct_values': this.model.get(this.field_name).correct_values});
+            this.$el.removeClass('error');
+            this.$el.addClass('accept_value');
+        }
+        this.render();
+    }
+});
 
+CatalogApp.ItemView = Backbone.View.extend({
+    tagName: 'tr',
+    template: 'item_tpl',
+    saveTemplate: 'save_tpl',
+    events: {
+        'click .save': 'save',
+    },
+    initialize: function(options){
+        if(options.fields && options.tableEl){
+            this.fields = options.fields;
+            this.tableEl = options.tableEl;
+        }
+        this.child_views = [];
+    },
+    render: function () {
+        this.$el.empty();
+        var self = this;
+        _.each(this.fields, function(field){
+            self.renderField(field[0]);
+        });
+        this.$el.append(templateHelper(this.saveTemplate));
+        return this;
+    },
+    renderField: function(field_name) {
+        var field = this.model.get(field_name)
+        if (field.editable) {
+            var editview = new CatalogApp.EditView({
+                model: this.model,
+                field_name: field_name
+            });
+            this.$el.append(editview.render().el);
+            this.child_views.push(editview);
+        }
+        else {
+            this.$el.append(
+                templateHelper(
+                    this.template,
+                    {field: field}
+                )
+            );
+        }
+    },
+    close: function() {
+        this.removeChilds();
+        this.remove();
+        this.unbind();
+        this.undelegateEvents();
+    },
+    removeChilds: function() {
+        _.each(this.child_views, function(child_view){
+            if (child_view.close){
+                child_view.close();
+            }
+        });
+        this.child_views = [];
+    },
+    save: function(event) {
+        var self = this;
+        this.model.save({},
+            {
+                success: function(model, response, options){
+                    if (model.response.status === 'OK') {
+                        self.removeChilds();
+                        self.render();
+                        self.tableEl.trigger('update');
+                    }
+                    else {
+                        _.each(self.child_views, function(child_view){
+                            if (child_view.field_name in model.response.errors){
+                                child_view.showError();
+                                child_view.renderEdit();
+                            }
+                        });
+                    }
+                    model.response = {};
+                }
+            }
+        );
+    }
+});
 
 CatalogApp.ItemCollection = Backbone.Collection.extend({
     model: CatalogApp.ItemModel,
@@ -84,12 +272,13 @@ CatalogApp.ItemCollection = Backbone.Collection.extend({
     }
 });
 
-
 CatalogApp.ListItemsView = Backbone.View.extend({
     el: '#list_items_container',
     tableEl: '#list_table',
+    tbodyEl: '#list_table tbody',
     template: 'table_items_tpl',
     initialize: function(options){
+        var self = this;
         if(options.parent_id){
             this.parent_id = options.parent_id;
         } else {
@@ -99,54 +288,92 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         this.collection = new CatalogApp.ItemCollection({
             parent_id: this.parent_id
         });
-
+        this.child_views = [];
         this.listenTo(this.collection, 'reset', this.render);
+        this.listenTo(this, 'afterRender', this.initSorter);
     },
     render: function(){
-        self = this;
         this.$el.html(
             templateHelper(
                 this.template,
-                {fields: this.collection.fields, items: this.collection.toJSON()}
+                {fields: this.collection.fields}
             )
         );
-        $(document).ready(function(){
-            $(self.tableEl).tablesorter({
-                sortList: [[0,0]]
-            });
-        });
+        this.collection.each(function( item ){
+            this.renderItem( item );
+        }, this);
+        this.trigger('afterRender');
         return this
     },
+    renderItem: function(item) {
+        var itemview = new CatalogApp.ItemView({
+            model: item,
+            tableEl: $(this.tableEl),
+            fields: this.collection.fields
+        });
+        $(this.tbodyEl).append(itemview.render().el);
+        this.child_views.push(itemview);
+    },
     reRender: function(options){
+        this.destroy();
         this.collection.changeParentId(options.parent_id);
-        $(this.tableEl).trigger('destroy');
         return this
+    },
+    destroy: function() {
+        $(this.tableEl).trigger("destroy");
+        this.$el.empty();
+        this.removeChilds();
+    },
+    removeChilds: function() {
+        var item;
+        while (item = this.collection.first()) {
+          item.destroy();
+        }
+        _.each(this.child_views, function(child_view){
+            if (child_view.close) child_view.close();
+        });
+        this.child_views = [];
+    },
+    initSorter: function(){
+        self = this;
+        $(document).ready(function(){
+            $(self.tableEl).tablesorter({
+                sortList: [[0,0]],
+                theme: 'ice',
+                widgets: ['resizable'],
+                textExtraction:function(s){
+                    if($(s).find('img').length == 0) return $(s).text();
+                    return $(s).find('img').attr('alt');
+                }
+            });
+        });
     }
 });
 
 
 CatalogApp.TreeView = Backbone.View.extend({
     el: '#tree_container',
+    rootEl: '#catalog-root-btn',
     searchId: '#tree_search',
     template: 'tree_tpl',
     initialize: function(options){
-        var self = this;
 
+        var self = this;
         this.render();
 
         if(Modernizr.localstorage){
             this.resizeColumns($('#left-col'), localStorage['resize_width']);
         }
 
-        $("#catalog-root-btn").click(function(event){
-            $(".jstree-clicked").removeClass("jstree-clicked");
-            self.renderListItemsView();
+        $(this.rootEl).click(function(event){
+            self.selectRoot();
         });
 
         $(window).resize(function(event){
             self.resizeColumns($("#left-col"));
 
         });
+
         $("#left-col").resizable({
             handles: 'e',
             resize: function(e, ui){
@@ -165,13 +392,14 @@ CatalogApp.TreeView = Backbone.View.extend({
     },
     resizeColumns: function(el, width){
         var parent_width = $(el).parent().outerWidth();
+        var scroll = 16;
         if(width){
             var width = parseInt(width)
             $(el).width(width);
-            $('#right-col').width(parent_width - parseInt(width)-4);
+            $('#right-col').width(parent_width - parseInt(width)-scroll);
         } else {
             var left_width = $(el).outerWidth();
-            $('#right-col').width(parent_width - left_width-2);
+            $('#right-col').width(parent_width - left_width-scroll);
         }
     },
     initJsTree: function(){
@@ -246,6 +474,13 @@ CatalogApp.TreeView = Backbone.View.extend({
             if(data.node.children.length > 0){
                 self.renderListItemsView(data.node.id);
             }
+            $(self.rootEl).removeClass('active');
+        });
+
+        this.$el.on('ready.jstree', function(e, data){
+            if (data.instance.get_selected().length == 0) {
+                self.selectRoot();
+            }
         });
 
         // search
@@ -265,6 +500,11 @@ CatalogApp.TreeView = Backbone.View.extend({
         });
 
         return this;
+    },
+    selectRoot: function() {
+        this.$el.jstree().deselect_all();
+        $(this.rootEl).addClass('active');
+        this.renderListItemsView();
     },
     addTreeItem: function(url) {
         var win = window.open(url + '&_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
@@ -315,7 +555,6 @@ CatalogApp.TreeView = Backbone.View.extend({
                 parent_id: tree_id
             });
         }
-
     }
 });
 
