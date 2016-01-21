@@ -2,17 +2,10 @@
 from django.contrib import admin
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.html import strip_tags
-from django.utils.encoding import smart_unicode
+from django.db import models
 
 
 class GridRow(object):
-
-    types = {
-        int: 'text',
-        unicode: 'text',
-        str: 'text',
-        bool: 'checkbox'
-    }
 
     EDITABLE_FIELDS = [
         'CharField',
@@ -39,27 +32,37 @@ class GridRow(object):
             except FieldDoesNotExist:
                 editable = False
             try:
-                value = admin.utils.lookup_field(field_name, self.obj,
-                                                 self.admin_cls)[2]
+                modelfield, attr, val = \
+                    admin.utils.lookup_field(field_name, self.obj,
+                                             self.admin_cls)
+                from django.utils.html import conditional_escape
+                value = conditional_escape(admin.utils.display_for_field(val, modelfield))
             except AttributeError:
                 value = ''
+                modelfield = None
 
-            field_type = type(value)
-            if isinstance(value, (unicode, str)):
-                value = strip_tags(value)
-                if len(value) > 100:
-                    value = value[:100]
-                    editable = False
 
-            if field_type == bool:
-                if value:
-                    value = 't'
-                else:
-                    value = 'f'
+            field_type = 'text'
+            correct_values = None
+            if modelfield:
+                if isinstance(modelfield, models.BooleanField):
+                    field_type = 'checkbox'
+                    if val:
+                        value = 't'
+                    else:
+                        value = 'f'
+                if isinstance(modelfield,
+                              (models.IntegerField, models.CharField)) \
+                        and modelfield.choices:
+                    field_type = 'select'
+                    value = val
+                    correct_values = dict(modelfield.choices)
+
 
             data[field_name] = {
-                'type': self.types[field_type] if field_type in self.types else 'text',
-                'value': smart_unicode(value, strings_only=True),
-                'editable': editable
+                'type': field_type,
+                'value': value,
+                'editable': editable,
+                'correct_values': correct_values if correct_values else ''
             }
         return data

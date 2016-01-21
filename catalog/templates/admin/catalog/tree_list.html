@@ -113,12 +113,24 @@
                       <% } else { %>
                           <img src="{% static 'admin/img/icon-no.gif' %}" alt="<%= field.value %>">
                       <% } %>
+                <% } else if (field.type == 'select'){ %>
+                    <%= field.correct_values[field.value] %>
                 <% } else { %>
                    <%= field.value %>
                 <% } %>
             </script>
             <script type="text/template" id="edit_tpl">
-                <input <% if(type == 'checkbox' && value == 't'){ %>checked="checked"<% } %> type="<%= type %>" value="<%= value %>" >
+                <% if(type == 'checkbox'){ %>
+                    <input <% if(value == 't'){ %>checked="checked"<% } %> type="checkbox" >
+                <% } else if (type == 'select'){ %>
+                    <select>
+                        <% _.each(correct_values, function(val, key){ %>
+                            <option <% if(key == value){ %>selected <% } %> value="<%= key %>"><%= val %></option>
+                        <% }); %>
+                    </select>
+                <% } else { %>
+                    <input type="text">
+                <% } %>
                 <div class="accept">OK</div>
                 <div class="cancel">{% trans 'Cancel' %}</div>
             </script>

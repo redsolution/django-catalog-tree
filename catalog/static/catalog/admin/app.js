@@ -91,7 +91,7 @@ CatalogApp.ItemModel = Backbone.Model.extend({
         }
     },
     destroy: function() {
-        this.trigger('destroy', this);
+       this.trigger('destroy', this);
     }
 });
 
@@ -104,7 +104,7 @@ CatalogApp.EditView = Backbone.View.extend({
         'click': 'activeEdit',
         'click .accept': 'acceptEdit',
         'click .cancel': 'cancelEdit',
-        'click input': function(event){ event.stopPropagation(); }
+        'click input, select': function(event){ event.stopPropagation(); }
     },
     initialize: function(options) {
         if(options.field_name){
@@ -125,7 +125,8 @@ CatalogApp.EditView = Backbone.View.extend({
             templateHelper(
                 this.edit_template,
                 {type: this.model.get(this.field_name).type,
-                 value: this.model.get(this.field_name).value}
+                 value: this.model.get(this.field_name).value,
+                 correct_values: this.model.get(this.field_name).correct_values}
             )
         );
         this.$el.find('input').focus().val(this.model.get(this.field_name).value);
@@ -153,11 +154,13 @@ CatalogApp.EditView = Backbone.View.extend({
         if (this.model.get(this.field_name).type == 'checkbox') {
             if (this.$el.find('input').prop("checked")) new_value = 't';
             else new_value = 'f';
+        } else if (this.model.get(this.field_name).type == 'select'){
+            new_value = this.$el.find('select option:selected').val();
         } else {
             new_value = this.$el.find('input').val();
         }
         if (this.model.get(this.field_name).value != new_value) {
-            this.model.set(this.field_name, {'editable': true, 'type': this.model.get(this.field_name).type, 'value': new_value});
+            this.model.set(this.field_name, {'editable': true, 'type': this.model.get(this.field_name).type, 'value': new_value, 'correct_values': this.model.get(this.field_name).correct_values});
             this.$el.removeClass('error');
             this.$el.addClass('accept_value');
         }
@@ -322,9 +325,10 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         this.removeChilds();
     },
     removeChilds: function() {
-        this.collection.each(function( item ){
-            item.destroy();
-        }, this);
+        var item;
+        while (item = this.collection.first()) {
+          item.destroy();
+        }
         _.each(this.child_views, function(child_view){
             if (child_view.close) child_view.close();
         });
