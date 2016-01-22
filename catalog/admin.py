@@ -47,10 +47,13 @@ class CatalogAdmin(admin.ModelAdmin):
         return TemplateResponse(request, self.change_list_template,
                                 context, current_app=self.admin_site.name)
 
-    def get_display_fields(self):
+    def has_add_permission(self, request):
+        return False
+
+    def get_display_fields(self, models):
         fields = []
         field_names = []
-        for model_cls in get_catalog_models():
+        for model_cls in models:
             admin_cls = admin.site._registry[model_cls]
             for field_name in admin_cls.list_display:
                 if field_name not in field_names and field_name != '__str__':
@@ -59,7 +62,6 @@ class CatalogAdmin(admin.ModelAdmin):
                     fields.append([field_name, field_label])
                     field_names.append(field_name)
         return fields
-
 
     def get_node_data(self, treeitem):
         node = {}
@@ -210,7 +212,10 @@ class CatalogAdmin(admin.ModelAdmin):
         if nodes_qs.count() == 0:
             return JsonResponse(response)
 
-        fields = self.get_display_fields()
+        distinct_node_types = nodes_qs.order_by('content_type__id').distinct('content_type__id')
+        models = [node.content_object.__class__ for node in distinct_node_types]
+        fields = self.get_display_fields(models)
+        
         nodes = []
         for item in nodes_qs:
             admin_cls = admin.site._registry[type(item.content_object)]

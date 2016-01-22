@@ -349,7 +349,6 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         self = this;
         $(document).ready(function(){
             $(self.tableEl).tablesorter({
-                sortList: [[0,0]],
                 theme: 'ice',
                 textExtraction:function(s){
                     if($(s).find('img').length == 0) return $(s).text();

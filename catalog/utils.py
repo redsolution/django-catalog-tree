@@ -1,5 +1,8 @@
 from django.apps import apps as django_apps
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
+from catalog.models import TreeItem
 
 
 def get_catalog_models():
@@ -15,3 +18,18 @@ def get_content_objects(catalog_tree_items, show=True):
             for item in catalog_tree_items if item.content_object.show
         ]
     return [item.content_object for item in catalog_tree_items]
+
+
+def get_sorted_content_objects(content_objects):
+    objects = {}
+    for instance in content_objects:
+        content_type = ContentType.objects.get_for_model(instance.__class__)
+        objects[(content_type.id, instance.id)] = instance
+    if not objects:
+        return []
+    q = Q()
+    for content_type, object_id in objects.iterkeys():
+        q |= Q(content_type=content_type, object_id=object_id)
+    items = TreeItem.objects.filter(q)
+    values = items.values_list('content_type', 'object_id')
+    return [objects[value] for value in values]

@@ -81,9 +81,35 @@
     color: #fff;
 }
 
-table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp {
+#list_table {
+    margin: 0;
+}
+
+#list_table th {
     background-color: #79aec8;
     color: #fff;
+    font-family: "Roboto", "Lucida Grande", Verdana, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: normal;
+    text-shadow: none;
+}
+
+.tablesorter-ice .header,
+.tablesorter-ice .tablesorter-header {
+    background-image: url("img/unsorted.gif");
+}
+
+.tablesorter-ice .headerSortDown,
+.tablesorter-ice .tablesorter-headerSortDown,
+.tablesorter-ice .tablesorter-headerDesc {
+    background-image: url("img/icon_sort_asc.gif");
+}
+
+.tablesorter-ice .headerSortUp,
+.tablesorter-ice .tablesorter-headerSortUp,
+.tablesorter-ice .tablesorter-headerAsc {
+    background-image: url("img/icon_sort_desc.gif");
 }
 
 #list_table td {
