@@ -103,11 +103,12 @@
                 </td>
             </script>
             <script type="text/template" id="save_tpl">
+                <td class="action">
                 <% if(edit){ %>
-                <td class="save"><button disabled>{% trans 'Save' %}</button></td>
-                <% } else { %>
-                   <td></td>
+                <button class="save" disabled>{% trans 'Save' %}</button>
                 <% } %>
+                <button class="change">{% trans 'Change' %}</button>
+                </td>
             </script>
             <script type="text/template" id="field_tpl">
                 <% if(field.type == 'checkbox'){

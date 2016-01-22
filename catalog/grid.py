@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
 from django.db.models.fields import FieldDoesNotExist
+from django.core.urlresolvers import reverse
 from django.utils.html import conditional_escape
 from django.db import models
 
@@ -20,8 +21,11 @@ class GridRow(object):
         self.admin_cls = admin_cls
 
     def json_data(self):
-
-        data = {'id': self.obj.tree.get().id}
+        link = reverse('admin:{0}_{1}_change'.
+                       format(self.obj.__class__._meta.app_label,
+                              self.obj.__class__.__name__.lower()),
+                       args=(self.obj.id,))
+        data = {'id': self.obj.tree.get().id, 'link': link}
         for field_name in self.fields:
             editable = True
             try:

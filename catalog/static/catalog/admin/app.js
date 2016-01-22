@@ -173,7 +173,8 @@ CatalogApp.ItemView = Backbone.View.extend({
     template: 'item_tpl',
     saveTemplate: 'save_tpl',
     events: {
-        'click .save button': 'save',
+        'click button.save': 'save',
+        'click button.change': 'change',
     },
     initialize: function(options){
         if(options.fields && options.tableEl){
@@ -228,7 +229,11 @@ CatalogApp.ItemView = Backbone.View.extend({
         this.child_views = [];
     },
     allowSave: function() {
-        this.$el.find(".save button").prop("disabled", false);
+        this.$el.find("button.save").prop("disabled", false);
+    },
+    change: function() {
+        var win = window.open(this.model.get('link') + '?_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        win.focus();
     },
     save: function(event) {
         var self = this;

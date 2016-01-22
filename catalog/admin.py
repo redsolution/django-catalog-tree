@@ -76,7 +76,7 @@ class CatalogAdmin(admin.ModelAdmin):
         change_link = reverse('admin:{0}_{1}_change'. \
                               format(obj.__class__._meta.app_label,
                                      obj.__class__.__name__.lower()),
-                              args=(treeitem.content_object.id,))
+                              args=(obj.id,))
         copy_link = reverse('admin:{0}_{1}_add'. \
                             format(obj.__class__._meta.app_label,
                                    obj.__class__._meta.model_name)) + \
