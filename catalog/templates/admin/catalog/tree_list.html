@@ -28,7 +28,6 @@
     <script src="{% static 'catalog/admin/backbone.js' %}"></script>
     <script src="{% static 'catalog/admin/jstree/jstree.min.js' %}"></script>
     <script src="{% static 'catalog/admin/tablesorter/jquery.tablesorter.js' %}"></script>
-    <script src="{% static 'catalog/admin/tablesorter/jquery.tablesorter.widgets.js' %}"></script>
     <script src="{% static 'catalog/admin/modernizr.localstorage.min.js' %}"></script>
     <script src="{% static 'catalog/admin/app.js' %}"></script>
     <script>
@@ -104,7 +103,11 @@
                 </td>
             </script>
             <script type="text/template" id="save_tpl">
-                <td class="save"><div>{% trans 'Save' %}</div></td>
+                <% if(edit){ %>
+                <td class="save"><button disabled>{% trans 'Save' %}</button></td>
+                <% } else { %>
+                   <td></td>
+                <% } %>
             </script>
             <script type="text/template" id="field_tpl">
                 <% if(field.type == 'checkbox'){

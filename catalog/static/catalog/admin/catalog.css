@@ -109,14 +109,20 @@ table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSo
 
 #list_table .save {
     text-align: center;
-    cursor: pointer;
 }
 
-#list_table .save div {
+#list_table .save button {
+    cursor: pointer;
+    border: none;
     border-radius: 2px;
     padding: 5px;
     color: #fff;
-    background: #a0db8e;
+    font-weight: bold;
+    background: rgba(160, 219, 142, 1);
+}
+
+#list_table .save button[disabled] {
+    background: rgba(160, 219, 142, 0.6);
 }
 
 #list_table td.editable .cancel {
@@ -125,10 +131,6 @@ table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSo
 
 #list_table td.accept_value {
     background: #a0db8e;
-}
-
-#list_table td.error {
-   background: #fff;
 }
 
 #list_table td input {

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
 from django.db.models.fields import FieldDoesNotExist
-from django.utils.html import strip_tags
+from django.utils.html import conditional_escape
 from django.db import models
 
 
@@ -31,15 +31,17 @@ class GridRow(object):
                         editable = False
             except FieldDoesNotExist:
                 editable = False
-            try:
-                modelfield, attr, val = \
-                    admin.utils.lookup_field(field_name, self.obj,
-                                             self.admin_cls)
-                from django.utils.html import conditional_escape
-                value = conditional_escape(admin.utils.display_for_field(val, modelfield))
-            except AttributeError:
-                value = ''
-                modelfield = None
+
+            value = ''
+            modelfield = None
+            if field_name in self.admin_cls.list_display:
+                try:
+                    modelfield, attr, val = \
+                        admin.utils.lookup_field(field_name, self.obj,
+                                                 self.admin_cls)
+                    value = conditional_escape(admin.utils.display_for_field(val, modelfield))
+                except AttributeError:
+                    pass
 
 
             field_type = 'text'
@@ -57,7 +59,6 @@ class GridRow(object):
                     field_type = 'select'
                     value = val
                     correct_values = dict(modelfield.choices)
-
 
             data[field_name] = {
                 'type': field_type,

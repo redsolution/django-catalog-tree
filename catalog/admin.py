@@ -63,16 +63,16 @@ class CatalogAdmin(admin.ModelAdmin):
 
     def get_node_data(self, treeitem):
         node = {}
+        obj = treeitem.content_object
         if treeitem.parent is None:
             node['parent'] = '#'
         else:
             node['parent'] = treeitem.parent.id
-        if treeitem.content_object.leaf is True:
+        if obj.leaf is True:
             node['type'] = 'leaf'
         node['id'] = treeitem.id
         node['text'] = treeitem.__unicode__()
         node['data'] = {}
-        obj = treeitem.content_object
         change_link = reverse('admin:{0}_{1}_change'. \
                               format(obj.__class__._meta.app_label,
                                      obj.__class__.__name__.lower()),
@@ -85,7 +85,7 @@ class CatalogAdmin(admin.ModelAdmin):
         node['data']['change_link'] = change_link
         node['data']['copy_link'] = copy_link
 
-        if treeitem.content_object.leaf is False:
+        if obj.leaf is False:
             node['data']['add_links'] = []
             for model_cls in get_catalog_models():
                 node['data']['add_links'].\
@@ -150,8 +150,10 @@ class CatalogAdmin(admin.ModelAdmin):
 
             obj = treeitem.content_object
             errors = {}
+            admin_cls = admin.site._registry[type(obj)]
             for field in data:
-                if field != 'id':
+                if field in admin_cls.list_display and \
+                                field in admin_cls.list_editable:
                     value = data[field]['value']
                     try:
                         modelfield = obj.__class__._meta.get_field(field)
@@ -212,9 +214,10 @@ class CatalogAdmin(admin.ModelAdmin):
         nodes = []
         for item in nodes_qs:
             admin_cls = admin.site._registry[type(item.content_object)]
-            node = GridRow(item.content_object, [field[0] for field in fields],
-                           admin_cls)
-            nodes.append(node.json_data())
+            if admin_cls.list_display and admin_cls.list_display != ('__str__', ):
+                node = GridRow(item.content_object, [field[0] for field in fields],
+                               admin_cls)
+                nodes.append(node.json_data())
 
         response['fields'] = fields
         response['nodes'] = nodes

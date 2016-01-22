@@ -10,10 +10,10 @@ var csrftoken = $.cookie('csrftoken');
 function addMessage(type, text) {
     var message = $('<li class="' + type + '">' + text + '</li>').hide();
     $(".messagelist").append(message);
-    message.fadeIn(500);
+    message.slideDown(500);
 
     setTimeout(function() {
-        message.fadeOut(500, function() {
+        message.slideUp(500, function() {
             message.remove();
         });
     }, 5000);
@@ -91,7 +91,7 @@ CatalogApp.ItemModel = Backbone.Model.extend({
         }
     },
     destroy: function() {
-       this.trigger('destroy', this);
+        this.trigger('destroy', this);
     }
 });
 
@@ -129,6 +129,7 @@ CatalogApp.EditView = Backbone.View.extend({
                  correct_values: this.model.get(this.field_name).correct_values}
             )
         );
+        this.$el.removeClass('accept_value');
         this.$el.find('input').focus().val(this.model.get(this.field_name).value);
         return this;
     },
@@ -161,7 +162,6 @@ CatalogApp.EditView = Backbone.View.extend({
         }
         if (this.model.get(this.field_name).value != new_value) {
             this.model.set(this.field_name, {'editable': true, 'type': this.model.get(this.field_name).type, 'value': new_value, 'correct_values': this.model.get(this.field_name).correct_values});
-            this.$el.removeClass('error');
             this.$el.addClass('accept_value');
         }
         this.render();
@@ -173,14 +173,16 @@ CatalogApp.ItemView = Backbone.View.extend({
     template: 'item_tpl',
     saveTemplate: 'save_tpl',
     events: {
-        'click .save': 'save',
+        'click .save button': 'save',
     },
     initialize: function(options){
         if(options.fields && options.tableEl){
             this.fields = options.fields;
             this.tableEl = options.tableEl;
         }
+        this.edit = false;
         this.child_views = [];
+        this.listenTo(this.model, 'change', this.allowSave);
     },
     render: function () {
         this.$el.empty();
@@ -188,12 +190,13 @@ CatalogApp.ItemView = Backbone.View.extend({
         _.each(this.fields, function(field){
             self.renderField(field[0]);
         });
-        this.$el.append(templateHelper(this.saveTemplate));
+        this.$el.append(templateHelper(this.saveTemplate, {'edit': this.edit}));
         return this;
     },
     renderField: function(field_name) {
         var field = this.model.get(field_name)
         if (field.editable) {
+            this.edit = true;
             var editview = new CatalogApp.EditView({
                 model: this.model,
                 field_name: field_name
@@ -223,6 +226,9 @@ CatalogApp.ItemView = Backbone.View.extend({
             }
         });
         this.child_views = [];
+    },
+    allowSave: function() {
+        this.$el.find(".save button").prop("disabled", false);
     },
     save: function(event) {
         var self = this;
@@ -340,7 +346,6 @@ CatalogApp.ListItemsView = Backbone.View.extend({
             $(self.tableEl).tablesorter({
                 sortList: [[0,0]],
                 theme: 'ice',
-                widgets: ['resizable'],
                 textExtraction:function(s){
                     if($(s).find('img').length == 0) return $(s).text();
                     return $(s).find('img').attr('alt');
