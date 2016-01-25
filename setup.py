@@ -25,7 +25,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content :: News/Diary',
     ],
     packages=find_packages(),
-    install_requires=['django-classy-tags', 'django-mptt'],
+    install_requires=['django-classy-tags<0.4', 'django-mptt<0.8'],
     include_package_data=True,
     zip_safe=False,
 )
