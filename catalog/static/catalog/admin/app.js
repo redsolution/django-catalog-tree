@@ -140,6 +140,7 @@ CatalogApp.EditView = Backbone.View.extend({
     },
     showError: function() {
         this.$el.addClass("error");
+        this.renderEdit();
     },
     activeEdit: function(event){
         event.stopPropagation();
@@ -171,7 +172,7 @@ CatalogApp.EditView = Backbone.View.extend({
 CatalogApp.ItemView = Backbone.View.extend({
     tagName: 'tr',
     template: 'item_tpl',
-    saveTemplate: 'save_tpl',
+    actionTemplate: 'action_tpl',
     events: {
         'click button.save': 'save',
         'click button.change': 'change',
@@ -191,7 +192,7 @@ CatalogApp.ItemView = Backbone.View.extend({
         _.each(this.fields, function(field){
             self.renderField(field[0]);
         });
-        this.$el.append(templateHelper(this.saveTemplate, {'edit': this.edit}));
+        this.$el.append(templateHelper(this.actionTemplate, {'edit': this.edit}));
         return this;
     },
     renderField: function(field_name) {
@@ -249,7 +250,6 @@ CatalogApp.ItemView = Backbone.View.extend({
                         _.each(self.child_views, function(child_view){
                             if (child_view.field_name in model.response.errors){
                                 child_view.showError();
-                                child_view.renderEdit();
                             }
                         });
                     }
@@ -380,7 +380,6 @@ CatalogApp.TreeView = Backbone.View.extend({
 
         $(window).resize(function(event){
             self.resizeColumns($("#left-col"));
-
         });
 
         $("#left-col").resizable({
