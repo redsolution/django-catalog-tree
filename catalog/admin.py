@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
+from django.contrib.admin.utils import label_for_field
 from django.template.response import TemplateResponse
 from django.conf.urls import patterns, url
 from django.utils.translation import ugettext_lazy as _
@@ -56,10 +57,15 @@ class CatalogAdmin(admin.ModelAdmin):
         for model_cls in models:
             admin_cls = admin.site._registry[model_cls]
             for field_name in admin_cls.list_display:
-                if field_name not in field_names and field_name != '__str__':
-                    field_label = unicode(admin.utils.label_for_field(
-                        field_name, model_cls, admin_cls))
-                    fields.append([field_name, field_label])
+                if field_name not in field_names:
+                    if field_name == '__str__':
+                        field_label = _(u'Object name')
+                        fields.insert(0, [field_name, field_label])
+                    else:
+                        field_label = unicode(label_for_field(field_name,
+                                                              model_cls,
+                                                              admin_cls))
+                        fields.append([field_name, field_label])
                     field_names.append(field_name)
         return fields
 
@@ -188,8 +194,7 @@ class CatalogAdmin(admin.ModelAdmin):
             try:
                 treeitem = TreeItem.objects.get(id=item_id)
                 treeitem.delete()
-                message = _(u'Deleted object %(object_name)s') % \
-                          {'object_name': treeitem.__unicode__()}
+                message = _(u'Deleted object')
                 return JsonResponse({'status': 'OK', 'type_message': 'info',
                                      'message': message}, encoder=LazyEncoder)
             except TreeItem.DoesNotExist:
@@ -212,22 +217,23 @@ class CatalogAdmin(admin.ModelAdmin):
         if nodes_qs.count() == 0:
             return JsonResponse(response)
 
-        distinct_node_types = nodes_qs.order_by('content_type__id').distinct('content_type__id')
-        models = [node.content_object.__class__ for node in distinct_node_types]
+        distinct_node_types = nodes_qs.order_by('content_type__id').\
+            distinct('content_type__id')
+        models = [node.content_object.__class__
+                  for node in distinct_node_types]
         fields = self.get_display_fields(models)
-        
+
         nodes = []
         for item in nodes_qs:
             admin_cls = admin.site._registry[type(item.content_object)]
-            if admin_cls.list_display and admin_cls.list_display != ('__str__', ):
-                node = GridRow(item.content_object, [field[0] for field in fields],
-                               admin_cls)
-                nodes.append(node.json_data())
+            node = GridRow(item.content_object,
+                           [field[0] for field in fields], admin_cls)
+            nodes.append(node.json_data())
 
         response['fields'] = fields
         response['nodes'] = nodes
 
-        return JsonResponse(response, safe=False)
+        return JsonResponse(response, safe=False, encoder=LazyEncoder)
 
     def get_urls(self):
         return patterns('',

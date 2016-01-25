@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
+from django.contrib.admin.utils import display_for_field
 from django.db.models.fields import FieldDoesNotExist
 from django.core.urlresolvers import reverse
 from django.utils.html import conditional_escape
@@ -43,7 +44,11 @@ class GridRow(object):
                     modelfield, attr, val = \
                         admin.utils.lookup_field(field_name, self.obj,
                                                  self.admin_cls)
-                    value = conditional_escape(admin.utils.display_for_field(val, modelfield))
+                    if field_name != '__str__':
+                        value = conditional_escape(
+                            display_for_field(val, modelfield))
+                    else:
+                        value = val
                 except AttributeError:
                     pass
 
