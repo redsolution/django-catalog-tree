@@ -4,7 +4,7 @@ from django.template.loader import render_to_string
 from classytags.core import Tag, Options
 from classytags.arguments import Argument
 from catalog.models import TreeItem
-from catalog.utils import get_content_objects
+from catalog.utils import get_content_objects, get_catalog_models
 
 TREE_TYPE_EXPANDED = 'expanded'
 TREE_TYPE_COLLAPSED = 'collapsed'
@@ -38,18 +38,26 @@ class CatalogChildren(Tag):
                 children = instance.tree.get().get_descendants()
             elif descendants == DESCENDANTS_TYPE_DIRECT:
                 children = instance.tree.get().get_children()
-            if model_type:
-                children = children.filter(content_type__model=model_type)
         else:
             children = TreeItem.objects.root_nodes()
-            if model_type:
-                children = children.filter(content_type__model=model_type)
 
+        if model_type:
+            ModelClass = None
+            for model_cls in get_catalog_models():
+                if model_cls._meta.model_name == model_type:
+                    ModelClass = model_cls
+            if ModelClass is not None:
+                allowed_ids = children.filter(
+                    content_type__model=model_type).values_list('object_id',
+                                                                flat=True)
+                queryset = ModelClass.objects.filter(id__in=allowed_ids)
+        else:
+            queryset = get_content_objects(children)
         if varname:
-            context[varname] = get_content_objects(children)
+            context[varname] = queryset
             return u''
         else:
-            context['children'] = get_content_objects(children)
+            context['children'] = queryset
             return render_to_string(self.template, context)
 
 register.tag(CatalogChildren)
