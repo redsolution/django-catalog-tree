@@ -304,16 +304,18 @@ CatalogApp.ListItemsView = Backbone.View.extend({
         this.listenTo(this, 'afterRender', this.initSorter);
     },
     render: function(){
-        this.$el.html(
-            templateHelper(
-                this.template,
-                {fields: this.collection.fields}
-            )
-        );
-        this.collection.each(function( item ){
-            this.renderItem( item );
-        }, this);
-        this.trigger('afterRender');
+        if (this.collection.fields) {
+            this.$el.html(
+                templateHelper(
+                    this.template,
+                    {fields: this.collection.fields}
+                )
+            );
+            this.collection.each(function( item ){
+                this.renderItem( item );
+            }, this);
+            this.trigger('afterRender');
+        }
         return this
     },
     renderItem: function(item) {
@@ -479,9 +481,7 @@ CatalogApp.TreeView = Backbone.View.extend({
         });
 
         this.$el.on('select_node.jstree', function(e, data){
-            if(data.node.children.length > 0){
-                self.renderListItemsView(data.node.id);
-            }
+            self.renderListItemsView(data.node.id);
             $(self.rootEl).removeClass('active');
         });
 
