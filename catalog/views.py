@@ -42,12 +42,8 @@ class CatalogItemView(DetailView):
             else:
                 catalog_items.append(item)
 
-        if len(catalog_items) == 1:
-            return catalog_items[0]
-
-        if len(catalog_items) > 1:
-            for item in catalog_items:
-                if item.get_complete_slug() == path:
-                    return item
+        for item in catalog_items:
+            if item.get_complete_slug() == path:
+                return item
 
         raise Http404
