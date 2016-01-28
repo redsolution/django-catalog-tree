@@ -14,7 +14,8 @@ def insert_in_tree(sender, instance, **kwargs):
 def delete_content_object(sender, instance, **kwargs):
     for child in instance.get_children():
         child.delete()
-    instance.content_object.delete()
+    if instance.content_object:
+        instance.content_object.delete()
 
 for model_cls in get_catalog_models():
     signals.post_save.connect(insert_in_tree, sender=model_cls)
