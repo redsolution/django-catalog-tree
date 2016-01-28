@@ -3,6 +3,9 @@ from django.contrib import admin
 from django.contrib.admin.utils import display_for_field
 from django.db.models.fields import FieldDoesNotExist
 from django.core.urlresolvers import reverse
+from django.contrib.admin.views.main import EMPTY_CHANGELIST_VALUE
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.encoding import smart_text
 from django.utils.html import conditional_escape
 from django.db import models
 
@@ -44,14 +47,15 @@ class GridRow(object):
                     modelfield, attr, val = \
                         admin.utils.lookup_field(field_name, self.obj,
                                                  self.admin_cls)
-                    if field_name != '__str__':
-                        value = conditional_escape(
-                            display_for_field(val, modelfield))
+                except (AttributeError, ValueError, ObjectDoesNotExist):
+                    result_repr = EMPTY_CHANGELIST_VALUE
+                else:
+                    if modelfield is None:
+                        result_repr = conditional_escape(smart_text(val))
                     else:
-                        value = val
-                except AttributeError:
-                    pass
-
+                        result_repr = conditional_escape(
+                            display_for_field(val, modelfield))
+                value = conditional_escape(result_repr)
 
             field_type = 'text'
             correct_values = None

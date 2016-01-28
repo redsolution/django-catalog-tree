@@ -58,7 +58,7 @@ class CatalogAdmin(admin.ModelAdmin):
             admin_cls = admin.site._registry[model_cls]
             for field_name in admin_cls.list_display:
                 if field_name not in field_names:
-                    if field_name == '__str__':
+                    if field_name == '__str__' or field_name == '__unicode__':
                         field_label = _(u'Object name')
                         fields.insert(0, [field_name, field_label])
                     else:
