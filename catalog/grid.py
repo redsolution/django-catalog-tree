@@ -6,6 +6,8 @@ from django.core.urlresolvers import reverse
 from django.contrib.admin.views.main import EMPTY_CHANGELIST_VALUE
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
+from django.template.defaultfilters import linebreaksbr
+from django.utils.safestring import mark_safe
 from django.utils.html import conditional_escape
 from django.db import models
 
@@ -41,6 +43,7 @@ class GridRow(object):
                 editable = False
 
             value = ''
+            field_type = 'text'
             modelfield = None
             if field_name in self.admin_cls.list_display:
                 try:
@@ -51,21 +54,26 @@ class GridRow(object):
                     result_repr = EMPTY_CHANGELIST_VALUE
                 else:
                     if modelfield is None:
-                        result_repr = conditional_escape(smart_text(val))
+                        boolean = getattr(attr, "boolean", False)
+                        if boolean:
+                            result_repr = 't' if val else 'f'
+                            field_type = 'checkbox'
+                        else:
+                            result_repr = smart_text(val)
+                            if getattr(attr, "allow_tags", False):
+                                result_repr = mark_safe(result_repr)
+                            else:
+                                result_repr = linebreaksbr(result_repr,
+                                                           autoescape=True)
                     else:
-                        result_repr = conditional_escape(
-                            display_for_field(val, modelfield))
+                        result_repr = display_for_field(val, modelfield)
                 value = conditional_escape(result_repr)
 
-            field_type = 'text'
             correct_values = None
             if modelfield:
                 if isinstance(modelfield, models.BooleanField):
                     field_type = 'checkbox'
-                    if val:
-                        value = 't'
-                    else:
-                        value = 'f'
+                    value = 't' if val else 'f'
                 if isinstance(modelfield,
                               (models.IntegerField, models.CharField)) \
                         and modelfield.choices:
