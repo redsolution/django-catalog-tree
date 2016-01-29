@@ -7,6 +7,9 @@ register = Library()
 
 @register.inclusion_tag('admin/catalog/include/add_btns.html')
 def add_btns():
+    """
+    Get add object buttons for every registered catalog models
+    """
     models_info = []
     for model in get_catalog_models():
         model_name = model.__name__

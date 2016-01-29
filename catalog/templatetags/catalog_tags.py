@@ -17,6 +17,19 @@ register = template.Library()
 
 
 class CatalogChildren(Tag):
+    """
+    Render or get chlidren for given object.
+
+    Parameters:
+        for
+            Content object
+        type
+            Model name
+        descendants
+            get children or all descendants
+        as
+            Name of context variable with result.
+    """
     name = 'catalog_children'
     template = 'catalog/children_tag.html'
 
@@ -68,6 +81,17 @@ register.tag(CatalogChildren)
 class CatalogTreeRender(Tag):
     """
     Render catalog links for menu or sitemap
+    Parameters:
+        for
+            TreeItem object
+        type
+            Menu type. Three types available:
+            `drilldown` - enabled by default. It will expand only active
+                path in tree
+            `collapsed` - menu will be collapsed only to dislpay root elements
+            `expanded` - all menu nodes will be expanded
+        template
+            Name template for render tree
     """
     name = 'render_catalog_tree'
     template = 'catalog/tree.html'
@@ -101,6 +125,9 @@ register.tag(CatalogTreeRender)
 
 @register.inclusion_tag('catalog/breadcrumbs.html', takes_context=True)
 def catalog_breadcrumbs(context, instance):
+    """
+    Get breadcrumbs for catalog object
+    """
     treeitem = instance.tree.get()
     context.update({'breadcrumbs':
                         get_content_objects(treeitem.get_ancestors())})
