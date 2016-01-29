@@ -2,6 +2,7 @@
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.core.urlresolvers import reverse, NoReverseMatch
+from django.core.cache import cache
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 from mptt.models import MPTTModel
@@ -64,10 +65,17 @@ class CatalogBase(models.Model):
     leaf = False
     tree = generic.GenericRelation('TreeItem')
     show = models.BooleanField(verbose_name=_('Show on site'), default=True)
+    TREEITEM_URL_KEY = 'treeitem_%d_url'
 
-    def get_complete_slug(self):
+    def cache_url_key(self):
+        return self.TREEITEM_URL_KEY % self.tree.get().id
+
+    def clear_cache(self):
+        cache.delete(self.cache_url_key())
+
+    def full_path(self):
         """
-        :return: full url of object.
+        Get url path ancestors
         """
         try:
             url = self.slug
@@ -77,6 +85,18 @@ class CatalogBase(models.Model):
             return url
         except AttributeError:
             return None
+
+    def get_complete_slug(self):
+        """
+        :return: full url of object.
+        """
+        key = self.cache_url_key()
+        url = cache.get(key, None)
+        if url is None:
+            url = self.full_path()
+            if url is not None:
+                cache.set(key, url)
+        return url
 
     def get_absolute_url(self):
         path = self.get_complete_slug()
