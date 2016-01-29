@@ -7,7 +7,9 @@ from utils import get_catalog_models, get_content_objects
 
 
 class CatalogRootView(TemplateView):
-
+    """
+    Render catalog root page
+    """
     template_name = 'catalog/root.html'
 
     def get_context_data(self, **kwargs):
@@ -18,7 +20,9 @@ class CatalogRootView(TemplateView):
 
 
 class CatalogItemView(DetailView):
-
+    """
+    Render catalog page for object
+    """
     def get_template_names(self):
         try:
             names = super(CatalogItemView, self).get_template_names()

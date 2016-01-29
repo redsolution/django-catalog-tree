@@ -27,6 +27,9 @@ class GridField(object):
         self.admin_cls = admin_cls
 
     def editable(self):
+        """
+        :return: True if field is editable else return False
+        """
         editable = True
         try:
             field = self.obj._meta.get_field(self.field_name)
@@ -38,6 +41,9 @@ class GridField(object):
         return editable
 
     def contents(self):
+        """
+        :return: type, value and correct values of field
+        """
         field_type = 'text'
         value = ''
         correct_values, modelfield = None, None        
@@ -85,6 +91,9 @@ class GridRow(object):
         self.admin_cls = admin_cls
 
     def json_data(self):
+        """
+        :return: JSON with fields data of object
+        """
         link = reverse('admin:{0}_{1}_change'.
                        format(self.obj.__class__._meta.app_label,
                               self.obj.__class__.__name__.lower()),

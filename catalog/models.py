@@ -28,6 +28,10 @@ class TreeItem(MPTTModel):
             return _(u'Catalog Tree item')
 
     def get_slug(self):
+        """
+        Check contains slug attribute in content_object model
+        :return: slug or None
+        """
         try:
             return self.content_object.slug
         except AttributeError:
@@ -35,6 +39,10 @@ class TreeItem(MPTTModel):
 
     @classmethod
     def check_slug(self, target, position, slug, node):
+        """
+        Check unique of `slug` in this level (relative target node by position)
+        :return: True if slug is unique or False
+        """
         if target is None:
             siblings = TreeItem.objects.root_nodes()
         else:
@@ -58,6 +66,9 @@ class CatalogBase(models.Model):
     show = models.BooleanField(verbose_name=_('Show on site'), default=True)
 
     def get_complete_slug(self):
+        """
+        :return: full url of object.
+        """
         try:
             url = self.slug
             if not self.tree.get().is_root_node():
@@ -76,4 +87,3 @@ class CatalogBase(models.Model):
                 pass
         else:
             return ''
-

@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.functional import Promise
 from django.utils.encoding import force_text
 from django.core.serializers.json import DjangoJSONEncoder
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models.fields import FieldDoesNotExist
 from django.apps import apps
 from django.shortcuts import get_object_or_404
@@ -22,6 +22,9 @@ import json
 
 
 class LazyEncoder(DjangoJSONEncoder):
+    """
+    Encoder for lazy translation objects
+    """
     def default(self, obj):
         if isinstance(obj, Promise):
             return force_text(obj)
@@ -33,6 +36,8 @@ class CatalogAdmin(admin.ModelAdmin):
     model = TreeItem
 
     def changelist_view(self, request):
+        if not self.has_change_permission(request, None):
+            raise PermissionDenied
         opts = self.model._meta
         app_label = opts.app_label
         title = opts.verbose_name
@@ -49,9 +54,16 @@ class CatalogAdmin(admin.ModelAdmin):
                                 context, current_app=self.admin_site.name)
 
     def has_add_permission(self, request):
+        """
+        Block add permission
+        """
         return False
 
     def get_display_fields(self, models):
+        """
+        :param models: List of models
+        :return: List fields for display. Format [field name, field label]
+        """
         fields = []
         field_names = []
         for model_cls in models:
@@ -70,6 +82,10 @@ class CatalogAdmin(admin.ModelAdmin):
         return fields
 
     def get_node_data(self, treeitem):
+        """
+        :param treeitem: TreeItem object
+        :return: JSON data of TreeItem object and his content_object
+        """
         node = {}
         obj = treeitem.content_object
         if treeitem.parent is None:
@@ -110,12 +126,26 @@ class CatalogAdmin(admin.ModelAdmin):
         return node
 
     def json_tree(self, request):
+        """
+        :param request:
+        :return: JSON structure of catalog for jsTree
+        """
         tree = []
         for treeitem in TreeItem.objects.all():
             tree.append(self.get_node_data(treeitem))
         return JsonResponse(tree, safe=False, encoder=LazyEncoder)
 
     def move_tree_item(self, request):
+        """
+        Moves node relative to a given target node as specified
+        by position
+        :param request:
+            request.POST contains item_id, target_id, position
+            item_id: id of movable node
+            target_id: id of target node
+            valid values for position are first-child, last-child, left, right
+        :return: JSON data with results of operation
+        """
         if request.method == "POST":
             position = request.POST.get('position', None)
             target_id = request.POST.get('target_id', None)
@@ -145,6 +175,12 @@ class CatalogAdmin(admin.ModelAdmin):
                              'message': message}, encoder=LazyEncoder)
 
     def edit_tree_item(self, request):
+        """
+        Edit Catalog object
+        :param request:
+            request.body contains fields data
+        :return: JSON data with results of operation and errors
+        """
         if request.method == 'PUT':
             data = json.loads(request.body.decode('utf-8'))
             try:
@@ -189,6 +225,12 @@ class CatalogAdmin(admin.ModelAdmin):
                                  'message': message}, encoder=LazyEncoder)
 
     def delete_tree_item(self, request):
+        """
+        Delete TreeItem object
+        :param request:
+            request.POST contains item_id: if of removed TreeItem object
+        :return: JSON data with results of operation
+        """
         if request.method == "POST":
             item_id = request.POST.get('item_id', None)
             try:
@@ -207,7 +249,11 @@ class CatalogAdmin(admin.ModelAdmin):
                              'message': message}, encoder=LazyEncoder)
 
     def list_children(self, request, parent_id=None):
-
+        """
+        :param parent_id: id of parent TreeItem object
+        :return: JSON data with fields for display and list children of
+        the parent node
+        """
         if parent_id is None:
             nodes_qs = TreeItem.objects.root_nodes()
         else:
@@ -269,8 +315,15 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
                                                                **kwargs)
 
         class ModelFormCatalogWrapper(FormClass):
-
+            """
+            ModelForm wrapper for check slug
+            """
             def clean_slug(self):
+                """
+                :return: slug if objects with this slug do not exist in this
+                        level
+                        else raise validation error
+                """
                 slug = self.cleaned_data['slug']
                 if obj is None:
                     node = None
@@ -300,6 +353,11 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
         return ModelFormCatalogWrapper
 
     def save_model(self, request, obj, form, change):
+        """
+        Override save_model.
+        Moves TreeItem object if request.POST contains target node or
+        copied node
+        """
         target_id = request.GET.get('target', None)
         copy_id = request.GET.get('copy', None)
         target = None
@@ -318,6 +376,10 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
             obj.tree.get().move_to(target.parent, 'last-child')
 
     def add_view(self, request, form_url="", extra_context=None):
+        """
+        Override add_view.
+        Fills change form data of copied object
+        """
         data = request.GET.copy()
         target_id = request.GET.get('copy', None)
         target = None
