@@ -152,8 +152,15 @@ class CatalogAdmin(admin.ModelAdmin):
             item_id = request.POST.get('item_id', None)
 
             if item_id and position and target_id:
-                node = get_object_or_404(TreeItem, id=item_id)
-                target = get_object_or_404(TreeItem, id=target_id)
+                try:
+                    node = TreeItem.objects.get(id=item_id)
+                    target = TreeItem.objects.get(id=target_id)
+                except TreeItem.DoesNotExist:
+                    message = _(u'Object does not exist')
+                    return JsonResponse({'status': 'error',
+                                         'type_message': 'error',
+                                         'message': message},
+                                        encoder=LazyEncoder,)
                 slug = node.get_slug()
                 if slug is not None and \
                         not TreeItem.check_slug(target, position,
