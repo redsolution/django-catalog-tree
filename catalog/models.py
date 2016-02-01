@@ -65,10 +65,10 @@ class CatalogBase(models.Model):
     leaf = False
     tree = generic.GenericRelation('TreeItem')
     show = models.BooleanField(verbose_name=_('Show on site'), default=True)
-    TREEITEM_URL_KEY = 'treeitem_%d_url'
+    FULL_URL_KEY = '%s_%d_url'
 
     def cache_url_key(self):
-        return self.TREEITEM_URL_KEY % self.tree.get().id
+        return self.FULL_URL_KEY % (self.__class__.__name__, self.id)
 
     def clear_cache(self):
         cache.delete(self.cache_url_key())
