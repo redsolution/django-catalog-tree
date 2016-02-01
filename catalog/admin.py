@@ -174,8 +174,6 @@ class CatalogAdmin(admin.ModelAdmin):
                                         },
                                         encoder=LazyEncoder)
                 node.move_to(target, position)
-                if node.get_slug():
-                    node.content_object.clear_cache()
                 message = _(u'Successful move')
                 return JsonResponse({'status': 'OK', 'type_message': 'info',
                                      'message': message}, encoder=LazyEncoder)

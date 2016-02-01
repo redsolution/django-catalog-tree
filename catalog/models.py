@@ -28,6 +28,13 @@ class TreeItem(MPTTModel):
         else:
             return _(u'Catalog Tree item')
 
+    def move_to(self, target, position='first-child'):
+        """
+        Clear cache when moving
+        """
+        self.content_object.clear_cache()
+        super(TreeItem, self).move_to(target, position=position)
+
     def get_slug(self):
         """
         Check contains slug attribute in content_object model
@@ -95,7 +102,7 @@ class CatalogBase(models.Model):
         if url is None:
             url = self.full_path()
             if url is not None:
-                cache.set(key, url)
+                cache.set(key, url, None)
         return url
 
     def get_absolute_url(self):
