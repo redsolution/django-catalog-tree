@@ -1,0 +1,9 @@
+{% load catalog_tags %}
+{% if tree_list %}
+    {% for object in tree_list %}
+        {% if object.get_absolute_url %}<a href="{{ object.get_absolute_url }}"><li>{{ object }}</li></a>{% endif %}
+        {% if object.tree.get.get_children %}
+            <ul>{% render_catalog_tree for object.tree.get %}</ul>
+        {% endif %}
+    {% endfor %}
+{% endif %}
