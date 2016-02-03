@@ -143,8 +143,10 @@ CatalogApp.EditView = Backbone.View.extend({
         this.renderEdit();
     },
     activeEdit: function(event){
-        event.stopPropagation();
-        this.renderEdit();
+        if (event.which == 1) {
+            event.stopPropagation();
+            this.renderEdit();
+        }
     },
     cancelEdit: function(event){
         event.stopPropagation();
@@ -175,7 +177,7 @@ CatalogApp.ItemView = Backbone.View.extend({
     actionTemplate: 'action_tpl',
     events: {
         'click button.save': 'save',
-        'click button.change': 'change',
+        'mousedown button.change': 'change',
     },
     initialize: function(options){
         if(options.fields && options.tableEl){
@@ -232,9 +234,14 @@ CatalogApp.ItemView = Backbone.View.extend({
     allowSave: function() {
         this.$el.find("button.save").prop("disabled", false);
     },
-    change: function() {
-        var win = window.open(this.model.get('link') + '?_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
-        win.focus();
+    change: function(event) {
+        if (event.which == 2) {
+            window.open(this.model.get('link'), '_blank', "");
+        }
+        else {
+            var win = window.open(this.model.get('link') + '?_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+            win.focus();
+        }
     },
     save: function(event) {
         var self = this;
