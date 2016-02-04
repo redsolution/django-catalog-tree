@@ -79,6 +79,8 @@ class CatalogBase(models.Model):
 
     def clear_cache(self):
         cache.delete(self.cache_url_key())
+        for child in self.tree.get().get_children():
+            child.content_object.clear_cache()
 
     def full_path(self):
         """
