@@ -63,7 +63,7 @@ class CatalogChildren(Tag):
                 allowed_ids = children.filter(
                     content_type__model=model_type).values_list('object_id',
                                                                 flat=True)
-                queryset = ModelClass.objects.filter(id__in=allowed_ids).order_by('tree__tree_id', 'tree__lft')
+                queryset = ModelClass.objects.filter(id__in=allowed_ids, show=True).order_by('tree__tree_id', 'tree__lft')
             else:
                 queryset = []
         else:
