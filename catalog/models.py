@@ -4,6 +4,7 @@ from django.contrib.contenttypes import generic
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.core.cache import cache
 from django.utils.translation import ugettext_lazy as _
+from django.utils import timezone
 from django.db import models
 from mptt.models import MPTTModel
 
@@ -72,6 +73,8 @@ class CatalogBase(models.Model):
     leaf = False
     tree = generic.GenericRelation('TreeItem')
     show = models.BooleanField(verbose_name=_('Show on site'), default=True)
+    last_modified = models.DateTimeField(verbose_name=_('Datetime last modified'),
+                                         auto_now=True, default=timezone.now())
     FULL_URL_KEY = '%s_%d_url'
 
     def cache_url_key(self):
