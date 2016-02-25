@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-01-25 09:35+0500\n"
+"POT-Creation-Date: 2016-02-25 11:34+0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,48 +19,47 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: admin.py:61
+#: admin.py:74
 msgid "Object name"
 msgstr "Наименование объекта"
 
-#: admin.py:102
+#: admin.py:121
 #, python-format
 msgid "Add %(model_name)s"
 msgstr "Добавить %(model_name)s"
 
-#: admin.py:128
+#: admin.py:159 admin.py:196 admin.py:250
+msgid "Object does not exist"
+msgstr "Объект не существует"
+
+#: admin.py:168
 #, python-format
 msgid "Invalid move. Slug %(slug)s exist in this level"
 msgstr ""
 "Ошибка при перемещении объекта. Слаг %(slug)s уже есть на данном уровне "
 "вложенности"
 
-#: admin.py:137
+#: admin.py:177
 msgid "Successful move"
 msgstr "Перемещение выполнено успешно"
 
-#: admin.py:140 admin.py:184 admin.py:202
+#: admin.py:180 admin.py:230 admin.py:254
 msgid "Bad request"
 msgstr "Ошибка в запросе"
 
-#: admin.py:150 admin.py:198
-msgid "Object does not exist"
-msgstr "Объект не существует"
-
-#: admin.py:173
+#: admin.py:219
 msgid "Correct the mistakes"
 msgstr "Исправьте ошибки"
 
-#: admin.py:180
+#: admin.py:226
 msgid "Save changes"
 msgstr "Изменения сохранены"
 
-#: admin.py:194
-#| msgid "Deleted object %(object_name)s"
+#: admin.py:246
 msgid "Deleted object"
 msgstr "Объект удален"
 
-#: admin.py:291
+#: admin.py:355
 #, python-format
 msgid "Slug %(slug)s already exist in this level"
 msgstr "Слаг %(slug)s уже есть на данном уровне вложенности"
@@ -69,21 +68,25 @@ msgstr "Слаг %(slug)s уже есть на данном уровне вло�
 msgid "Catalog"
 msgstr "Каталог"
 
-#: models.py:12 models.py:13
+#: models.py:14 models.py:15
 msgid "Catalog structure"
 msgstr "Структура каталога"
 
-#: models.py:17
+#: models.py:19
 msgid "Parent node"
 msgstr "Родительский элемент"
 
-#: models.py:28
+#: models.py:30
 msgid "Catalog Tree item"
 msgstr "Объект каталога"
 
-#: models.py:58
+#: models.py:75
 msgid "Show on site"
 msgstr "Отображать на сайте"
+
+#: models.py:76
+msgid "Datetime last modified"
+msgstr "Дата и время последнего изменения"
 
 #: templates/admin/catalog/include/add_btns.html:9
 msgid "Add"
