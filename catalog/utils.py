@@ -19,12 +19,15 @@ def get_content_objects(catalog_tree_items, show=True):
     :param catalog_tree_items: QuerySet or list of TreeItem objects
     :return: list of content objects
     """
+    res = []
     if show:
-        return [
-            item.content_object
-            for item in catalog_tree_items if item.content_object.show
-        ]
-    return [item.content_object for item in catalog_tree_items]
+        for item in catalog_tree_items:
+            if hasattr(item.content_object,'show') and item.content_object.show:
+                res.append(item.content_object)
+    else:
+        for item in catalog_tree_items:
+            res.append(item.content_object)
+    return res
 
 
 def get_sorted_content_objects(content_objects):
