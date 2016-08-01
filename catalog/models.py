@@ -27,7 +27,7 @@ class TreeItem(MPTTModel):
         if self.content_object:
             return unicode(self.content_object)
         else:
-            return _(u'Catalog Tree item')
+            return unicode(_('Catalog Tree item'))
 
     def move_to(self, target, position='first-child'):
         """

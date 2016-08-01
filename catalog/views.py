@@ -14,8 +14,9 @@ class CatalogRootView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(CatalogRootView, self).get_context_data(**kwargs)
-        context['object_list'] = \
-            get_content_objects(TreeItem.objects.root_nodes())
+        context['object_list'] = get_content_objects(
+            TreeItem.objects.root_nodes()
+        )
         return context
 
 
