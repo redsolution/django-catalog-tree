@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from django.contrib import admin
 from django.contrib.admin.utils import label_for_field
 from django.template.response import TemplateResponse
@@ -10,15 +11,13 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models.fields import FieldDoesNotExist
 from django.apps import apps
-from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.core.urlresolvers import reverse
 from django import forms
 from catalog.models import TreeItem
 from catalog.utils import get_catalog_models
 from catalog.grid import GridRow
-
-import json
+from catalog.settings import CATALOG_BLOCK_ADD_PERMISSION
 
 
 class LazyEncoder(DjangoJSONEncoder):
@@ -57,7 +56,10 @@ class CatalogAdmin(admin.ModelAdmin):
         """
         Block add permission
         """
-        return False
+        if CATALOG_BLOCK_ADD_PERMISSION:
+            return False
+        else:
+            return super(self, CatalogAdmin).has_add_permission(request)
 
     def get_display_fields(self, models):
         """
