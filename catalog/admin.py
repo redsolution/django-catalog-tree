@@ -17,7 +17,6 @@ from django import forms
 from catalog.models import TreeItem
 from catalog.utils import get_catalog_models
 from catalog.grid import GridRow
-from catalog.settings import CATALOG_BLOCK_ADD_PERMISSION
 
 
 class LazyEncoder(DjangoJSONEncoder):
@@ -56,10 +55,7 @@ class CatalogAdmin(admin.ModelAdmin):
         """
         Block add permission
         """
-        if CATALOG_BLOCK_ADD_PERMISSION:
-            return False
-        else:
-            return super(self, CatalogAdmin).has_add_permission(request)
+        return False
 
     def get_display_fields(self, models):
         """
