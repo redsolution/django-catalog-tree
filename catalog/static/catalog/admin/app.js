@@ -239,7 +239,7 @@ CatalogApp.ItemView = Backbone.View.extend({
             window.open(this.model.get('link'), '_blank', "");
         }
         else {
-            var win = window.open(this.model.get('link') + '?_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+            var win = window.open(this.model.get('link') + '?_popup=1', '', '');
             win.focus();
         }
     },
@@ -263,11 +263,13 @@ CatalogApp.ItemView = Backbone.View.extend({
                     model.response = {};
                 }
             }
+
         );
     }
 });
 
 CatalogApp.ItemCollection = Backbone.Collection.extend({
+
     model: CatalogApp.ItemModel,
     initialize: function(options){
         if(options.parent_id){
@@ -375,7 +377,6 @@ CatalogApp.TreeView = Backbone.View.extend({
     searchId: '#tree_search',
     template: 'tree_tpl',
     initialize: function(options){
-
         var self = this;
         this.render();
 
@@ -454,18 +455,17 @@ CatalogApp.TreeView = Backbone.View.extend({
                     });
 
                     return {
-                        'Remove': {
+                        'Watch': {
                             'separator_before': false,
                             'separator_after': false,
-                            'label': 'Удалить',
-                            'icon': 'delete-item',
-                            'action': function (obj) {
-                                self.deleteTreeItem(obj, node, tree);
+                            'label': 'Смотреть на сайте',
+                            'action': function () {
+                                self.watchTreeItem(node);
                             }
                         },
                         'Edit': {
                             'label': 'Изменить',
-                            'icon': 'edit-item',
+                           // 'icon': 'edit-item',
                             'action': function () {
                                 self.changeTreeItem(node);
                             }
@@ -480,7 +480,17 @@ CatalogApp.TreeView = Backbone.View.extend({
                             'action': function() {
                                 self.copyTreeItem(node, tree);
                             }
+                        },
+                        'Remove': {
+                            'separator_before': false,
+                            'separator_after': false,
+                            'label': 'Удалить',
+                            'icon': 'delete-item',
+                            'action': function (obj) {
+                                self.deleteTreeItem(obj, node, tree);
+                            }
                         }
+
                     }
                 }
             },
@@ -522,11 +532,11 @@ CatalogApp.TreeView = Backbone.View.extend({
         this.renderListItemsView();
     },
     addTreeItem: function(url) {
-        var win = window.open(url + '&_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        var win = window.open(url + '&_popup=1', '', '');
         win.focus();
     },
     changeTreeItem: function(node){
-        var win = window.open(node.data.change_link + '?_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        var win = window.open(node.data.change_link + '?_popup=1' , '', '');
         win.focus();
     },
     deleteTreeItem: function(obj, node, tree){
@@ -535,9 +545,14 @@ CatalogApp.TreeView = Backbone.View.extend({
         }
     },
     copyTreeItem: function(node, tree) {
-        var win = window.open(node.data.copy_link + '&_popup=1', '', "width=800,height=500,resizable=yes,scrollbars=yes,status=yes");
+        var win = window.open(node.data.copy_link + '&_popup=1', '', '');
         win.focus();
     },
+     watchTreeItem: function(node){
+        var win = window.open(node.data.watch_link , '_blank');
+        win.focus()
+    },
+
     checkTreeCallbacks: function(operation, node, parent, position, more){
         if (operation === "move_node" && more && more.core) {
             var moving = false;
@@ -573,6 +588,15 @@ CatalogApp.TreeView = Backbone.View.extend({
     }
 });
 
+function dismissChangeRelatedObjectPopup(win) {
+    win.close();
+    location.reload();
+}
+
+function dismissAddRelatedObjectPopup(win) {
+    win.close();
+    location.reload();
+}
 
 $(document).ready(function(){
     var catalogTreeOneView = new CatalogApp.TreeView({});

@@ -2,7 +2,7 @@ from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from catalog.models import TreeItem
+from .models import TreeItem
 
 
 def get_catalog_models():
@@ -14,7 +14,7 @@ def get_catalog_models():
         yield django_apps.get_model(app_label, model_name)
 
 
-def get_content_objects(catalog_tree_items, show=True):
+def get_content_objects(catalog_tree_items, show=True, allowed_models=[]):
     """
     :param catalog_tree_items: QuerySet or list of TreeItem objects
     :return: list of content objects
@@ -22,11 +22,19 @@ def get_content_objects(catalog_tree_items, show=True):
     res = []
     if show:
         for item in catalog_tree_items:
-            if hasattr(item.content_object,'show') and item.content_object.show:
-                res.append(item.content_object)
+            if hasattr(item.content_object, 'show') and item.content_object.show:
+                if allowed_models:
+                    if isinstance(item.content_object, allowed_models):
+                        res.append(item.content_object)
+                else:
+                    res.append(item.content_object)
     else:
         for item in catalog_tree_items:
-            res.append(item.content_object)
+            if allowed_models:
+                if isinstance(item.content_object, allowed_models):
+                    res.append(item.content_object)
+            else:
+                res.append(item.content_object)
     return res
 
 

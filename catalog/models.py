@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.core.cache import cache
 from django.utils.translation import ugettext_lazy as _
-from django.utils import timezone
 from django.db import models
 from mptt.models import MPTTModel
+
+try:
+    from tinymce.models import HTMLField
+except ImportError:
+    from django.db.models.fields import TextField as HTMLField
 
 
 class TreeItem(MPTTModel):
@@ -21,7 +25,7 @@ class TreeItem(MPTTModel):
 
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
-    content_object = generic.GenericForeignKey()
+    content_object = GenericForeignKey()
 
     def __unicode__(self):
         if self.content_object:
@@ -71,11 +75,16 @@ class CatalogBase(models.Model):
         abstract = True
 
     leaf = False
-    tree = generic.GenericRelation('TreeItem')
+    tree = GenericRelation(TreeItem)
     show = models.BooleanField(verbose_name=_('Show on site'), default=True)
-    last_modified = models.DateTimeField(verbose_name=_('Datetime last modified'),
-                                         auto_now=True, default=timezone.now())
+    last_modified = models.DateTimeField(verbose_name=_('Datetime last modified'), auto_now=True)
+    slug = models.SlugField(
+        verbose_name=_('Slug'), max_length=255, unique=True,
+        help_text=_('The slug will be used to create the page URL, it must be unique among the other pages of the same level.')
+    )
+
     FULL_URL_KEY = '%s_%d_url'
+
 
     def cache_url_key(self):
         return self.FULL_URL_KEY % (self.__class__.__name__, self.id)
@@ -89,14 +98,13 @@ class CatalogBase(models.Model):
         """
         Get url path ancestors
         """
-        try:
-            url = self.slug
-            if not self.tree.get().is_root_node():
-                for ancestor in self.tree.get().get_ancestors(ascending=True):
-                    url = ancestor.content_object.slug + '/' + url
-            return url
-        except AttributeError:
-            return None
+        path = []
+        for ancestor in self.tree.get().get_ancestors(ascending=True):
+            if ancestor.content_object.slug:
+                path.append(ancestor.content_object.slug)
+        if self.slug:
+            path.append(self.slug)
+        return '/'.join(path)
 
     def get_complete_slug(self):
         """
