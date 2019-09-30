@@ -17,6 +17,7 @@ from django import forms
 from catalog.models import TreeItem
 from catalog.utils import get_catalog_models
 from catalog.grid import GridRow
+from catalog.signals import content_object_parent_changed, content_object_created, content_object_moved
 
 
 class LazyEncoder(DjangoJSONEncoder):
@@ -104,8 +105,11 @@ class CatalogAdmin(admin.ModelAdmin):
                                    obj.__class__._meta.model_name)) + \
                     '?copy={}'.format(treeitem.id)
 
+        watch_link = reverse('catalog-item', args=(treeitem.content_object.get_complete_slug(),))
+
         node['data']['change_link'] = change_link
         node['data']['copy_link'] = copy_link
+        node['data']['watch_link'] = watch_link
 
         if obj.leaf is False:
             node['data']['add_links'] = []
@@ -171,7 +175,26 @@ class CatalogAdmin(admin.ModelAdmin):
                                         'message': message
                                         },
                                         encoder=LazyEncoder)
+
+                parent_from = node.parent.content_object if node.parent else None
                 node.move_to(target, position)
+                parent_to = node.parent.content_object if node.parent else None
+
+                if parent_from != parent_to:
+                    content_object_parent_changed.send(
+                        sender=None,
+                        instance=node.content_object,
+                        parent_from=parent_from,
+                        parent_to=parent_to,
+                    )
+
+                content_object_moved.send(
+                    sender=None,
+                    instance=node.content_object,
+                    parent_from=parent_from,
+                    parent_to=parent_to,
+                )
+
                 message = _(u'Successful move')
                 return JsonResponse({'status': 'OK', 'type_message': 'info',
                                      'message': message}, encoder=LazyEncoder)
@@ -290,14 +313,10 @@ class CatalogAdmin(admin.ModelAdmin):
         return patterns('',
             url(r'^tree/$', self.admin_site.admin_view(self.json_tree)),
             url(r'^move/$', self.admin_site.admin_view(self.move_tree_item)),
-            url(r'^delete/$',
-                self.admin_site.admin_view(self.delete_tree_item)),
-            url(r'^edit/$',
-                self.admin_site.admin_view(self.edit_tree_item)),
-            url(r'^list_children/(\d+)$',
-                self.admin_site.admin_view(self.list_children)),
-            url(r'^list_children/',
-                self.admin_site.admin_view(self.list_children)),
+            url(r'^edit/$', self.admin_site.admin_view(self.edit_tree_item)),
+            url(r'^delete/$', self.admin_site.admin_view(self.delete_tree_item)),
+            url(r'^list_children/(\d+)$', self.admin_site.admin_view(self.list_children)),
+            url(r'^list_children/', self.admin_site.admin_view(self.list_children)),
         ) + super(CatalogAdmin, self).get_urls()
 
 admin.site.register(TreeItem, CatalogAdmin)
@@ -375,10 +394,26 @@ class CatalogItemBaseAdmin(admin.ModelAdmin):
             except TreeItem.DoesNotExist:
                 pass
         obj.save()
+
         if target and target_id:
             obj.tree.get().move_to(target, 'last-child')
+            if not change:
+                # signal sending when obj created only
+                parent = target.content_object
+                content_object_created.send(
+                    sender=None,
+                    instance=obj,
+                    parent=parent,
+                )
         if target and copy_id:
             obj.tree.get().move_to(target.parent, 'last-child')
+            # signal sending when obj created only
+            parent = target.parent.content_object
+            content_object_created.send(
+                sender=None,
+                instance=obj,
+                parent=parent,
+            )
 
     def add_view(self, request, form_url="", extra_context=None):
         """

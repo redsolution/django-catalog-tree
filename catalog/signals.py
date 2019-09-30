@@ -2,6 +2,12 @@ from django.db.models import signals
 from django.core.cache import cache
 from catalog.utils import get_catalog_models
 from catalog.models import TreeItem
+from django.dispatch import Signal
+
+# special signals for situations where standard signals not working correctly
+content_object_parent_changed = Signal(providing_args=["instance", "parent_from", "parent_to"])
+content_object_moved = Signal(providing_args=["instance", "parent_from", "parent_to"])
+content_object_created = Signal(providing_args=["instance", "parent"])
 
 
 def insert_in_tree(sender, instance, **kwargs):

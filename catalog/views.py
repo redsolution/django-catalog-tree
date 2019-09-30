@@ -48,7 +48,11 @@ class CatalogItemView(DetailView):
                 catalog_items.append(item)
 
         for item in catalog_items:
-            if item.get_complete_slug() == path:
+            try:
+                complete_slug = item.get_complete_slug()
+            except ObjectDoesNotExist:
+                raise Http404
+            if complete_slug == path:
                 return item
 
         raise Http404
