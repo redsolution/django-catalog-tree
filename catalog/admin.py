@@ -105,7 +105,11 @@ class CatalogAdmin(admin.ModelAdmin):
                                    obj.__class__._meta.model_name)) + \
                     '?copy={}'.format(treeitem.id)
 
-        watch_link = reverse('catalog-item', args=(treeitem.content_object.get_complete_slug(),))
+        complete_slug = treeitem.content_object.get_complete_slug()
+        if complete_slug == '':
+            watch_link = reverse('catalog-root')
+        else:
+            watch_link = reverse('catalog-item', args=(complete_slug,))
 
         node['data']['change_link'] = change_link
         node['data']['copy_link'] = copy_link
