@@ -4,8 +4,7 @@
     {% block object-tools-items %}
         {% for add_model_info in models_info %}
         <li>
-        <a href="{{ add_model_info.0 }}" class="addlink"
-           onclick="return showAddAnotherPopup(this);">
+        <a href="{{ add_model_info.0 }}?_popup=1" class="addlink" target="_blank">
           {% trans 'Add' %} {{ add_model_info.1 }}
         </a>
         </li>

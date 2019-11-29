@@ -3,7 +3,7 @@ from django.views.generic import DetailView, TemplateView
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist, FieldError, ImproperlyConfigured
 from models import TreeItem
-from utils import get_catalog_models, get_content_objects
+from utils import get_catalog_models, get_content_objects, get_sorted_content_objects
 
 
 class CatalogRootView(TemplateView):
@@ -14,9 +14,14 @@ class CatalogRootView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(CatalogRootView, self).get_context_data(**kwargs)
-        context['object_list'] = get_content_objects(
-            TreeItem.objects.root_nodes()
-        )
+        # get single root object defining from custom model as CatalogRoot
+        root = TreeItem.objects.root_nodes().first()
+        root_page = root.content_object if root else None
+        object_list = get_sorted_content_objects(get_content_objects(root.get_children())) if root else TreeItem.objects.none()
+        context.update({
+            'object': root_page,
+            'object_list': object_list
+        })
         return context
 
 
@@ -48,7 +53,11 @@ class CatalogItemView(DetailView):
                 catalog_items.append(item)
 
         for item in catalog_items:
-            if item.get_complete_slug() == path:
+            try:
+                complete_slug = item.get_complete_slug()
+            except ObjectDoesNotExist:
+                raise Http404
+            if complete_slug == path:
                 return item
 
         raise Http404
