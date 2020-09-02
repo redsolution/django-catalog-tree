@@ -2,8 +2,8 @@
 from django.views.generic import DetailView, TemplateView
 from django.http import Http404
 from django.core.exceptions import ObjectDoesNotExist, FieldError, ImproperlyConfigured
-from models import TreeItem
-from utils import get_catalog_models, get_content_objects, get_sorted_content_objects
+from .models import TreeItem
+from .utils import get_catalog_models, get_content_objects, get_sorted_content_objects
 
 
 class CatalogRootView(TemplateView):

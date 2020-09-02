@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.conf.urls import url
-from views import CatalogRootView, CatalogItemView
+from .views import CatalogRootView, CatalogItemView
 
 urlpatterns = [
     url(r'^$', CatalogRootView.as_view(), name='catalog-root'),

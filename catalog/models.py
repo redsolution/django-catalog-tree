@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from django.core.urlresolvers import reverse, NoReverseMatch
+from django.urls import reverse, NoReverseMatch
 from django.core.cache import cache
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
@@ -21,17 +21,17 @@ class TreeItem(MPTTModel):
 
     parent = models.ForeignKey('self', related_name='children',
                                verbose_name=_('Parent node'), null=True,
-                               blank=True, editable=False)
+                               blank=True, editable=False, on_delete=models.CASCADE)
 
-    content_type = models.ForeignKey(ContentType)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
 
-    def __unicode__(self):
+    def __str__(self):
         if self.content_object:
-            return unicode(self.content_object)
+            return str(self.content_object)
         else:
-            return unicode(_('Catalog Tree item'))
+            return str(_('Catalog Tree item'))
 
     def move_to(self, target, position='first-child'):
         """
