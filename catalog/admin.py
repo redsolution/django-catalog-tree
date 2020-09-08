@@ -94,7 +94,7 @@ class CatalogAdmin(admin.ModelAdmin):
         if obj.leaf is True:
             node['type'] = 'leaf'
         node['id'] = treeitem.id
-        node['text'] = treeitem.__unicode__()
+        node['text'] = treeitem.__str__()
         node['data'] = {}
         change_link = reverse('admin:{0}_{1}_change'. \
                               format(obj.__class__._meta.app_label,

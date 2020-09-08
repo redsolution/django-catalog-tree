@@ -31,14 +31,14 @@ Open source catalog management system based on the Django framework and django-m
         def get_absolute_url(self):
             return reverse('catalog-root')
 
-        def __unicode__(self, *args, **kwargs):
+        def __str__(self, *args, **kwargs):
             return self.title
 
 
     class Section(CatalogBase):
         title = models.CharField(max_length=400)
 
-        def __unicode__(self):
+        def __str__(self):
             return self.title
 
 
@@ -46,7 +46,7 @@ Open source catalog management system based on the Django framework and django-m
         leaf = True # cannot have children
         title = models.CharField(max_length=400)
 
-        def __unicode__(self):
+        def __str__(self):
             return self.title
 
 
@@ -55,7 +55,7 @@ Open source catalog management system based on the Django framework and django-m
         title = models.CharField(max_length=400)
         items = models.ManyToManyField(Item, blank=True, null=True, related_name='categories')
 
-        def __unicode__(self):
+        def __str__(self):
             return self.title
 
     ```
