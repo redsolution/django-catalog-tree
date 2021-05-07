@@ -65,7 +65,7 @@ class GridField(object):
                             result_repr = linebreaksbr(result_repr,
                                                        autoescape=True)
                 else:
-                    result_repr = display_for_field(val, modelfield)
+                    result_repr = display_for_field(val, modelfield, '(None)')
             value = conditional_escape(result_repr)
             if modelfield:
                 if isinstance(modelfield, models.BooleanField):
