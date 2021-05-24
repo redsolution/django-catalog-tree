@@ -11,4 +11,4 @@ class CatalogAppConfig(AppConfig):
 class CustomCatalogBaseConfig(AppConfig):
 
     def ready(self):
-        import signals
+        import catalog.signals

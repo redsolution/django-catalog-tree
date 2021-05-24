@@ -26,9 +26,9 @@ setup(
     ],
     packages=find_packages(),
     install_requires=[
-        'django-classy-tags >=0.3,<=0.9.0',
+        'django-classy-tags==0.9.0',
         'django-mptt==0.9.*',
-        'django==1.11.*'
+        'django==2.2.*'
     ],
     include_package_data=True,
     zip_safe=False,

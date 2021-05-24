@@ -2,7 +2,7 @@
 from django.contrib import admin
 from django.contrib.admin.utils import display_for_field
 from django.db.models.fields import FieldDoesNotExist
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import smart_text
 from django.template.defaultfilters import linebreaksbr
@@ -65,7 +65,7 @@ class GridField(object):
                             result_repr = linebreaksbr(result_repr,
                                                        autoescape=True)
                 else:
-                    result_repr = display_for_field(val, modelfield)
+                    result_repr = display_for_field(val, modelfield, '(None)')
             value = conditional_escape(result_repr)
             if modelfield:
                 if isinstance(modelfield, models.BooleanField):

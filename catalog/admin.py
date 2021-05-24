@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models.fields import FieldDoesNotExist
 from django.apps import apps
 from django.http import JsonResponse, HttpResponse
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django import forms
 from .models import TreeItem
 from .utils import get_catalog_models
@@ -73,7 +73,7 @@ class CatalogAdmin(admin.ModelAdmin):
                         field_label = _(u'Object name')
                         fields.insert(0, [field_name, field_label])
                     else:
-                        field_label = unicode(label_for_field(field_name,
+                        field_label = str(label_for_field(field_name,
                                                               model_cls,
                                                               admin_cls))
                         fields.append([field_name, field_label])
@@ -94,7 +94,7 @@ class CatalogAdmin(admin.ModelAdmin):
         if obj.leaf is True:
             node['type'] = 'leaf'
         node['id'] = treeitem.id
-        node['text'] = treeitem.__unicode__()
+        node['text'] = treeitem.__str__()
         node['data'] = {}
         change_link = reverse('admin:{0}_{1}_change'. \
                               format(obj.__class__._meta.app_label,

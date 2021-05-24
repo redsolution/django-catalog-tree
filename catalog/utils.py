@@ -50,7 +50,7 @@ def get_sorted_content_objects(content_objects):
     if not objects:
         return []
     q = Q()
-    for content_type, object_id in objects.iterkeys():
+    for content_type, object_id in objects:
         q |= Q(content_type=content_type, object_id=object_id)
     items = TreeItem.objects.filter(q)
     values = items.values_list('content_type', 'object_id')
